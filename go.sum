@@ -1,0 +1,8 @@
+github.com/xybor-x/xycond v0.0.0-20220901045019-6c9ac3075ead h1:g+/F0F83xF+pct1Pm/IzRC5+li36TTDMWbSKzBJCvs0=
+github.com/xybor-x/xycond v0.0.0-20220901045019-6c9ac3075ead/go.mod h1:PuDr8bAjLq9M2/rgAo5o+IBa+gYZryWhop9XtGiHVOo=
+github.com/xybor-x/xyerror v0.0.0-20220901044817-68edb7f45147 h1:Tjg5OQNhCfp5Nm8PSKAEG+MFYHPSilf8NVU4hZnJr2I=
+github.com/xybor-x/xyerror v0.0.0-20220901044817-68edb7f45147/go.mod h1:mSQYYkr9quwWR9IViiy8qqNd5G9BMQrqy+p5rYBnZ50=
+github.com/xybor-x/xylock v0.0.0-20220901051538-aabf74992171 h1:5YfoZYMd6UgEmMJUJ51BY3wYUj6qOJRxk9gC4wTg0Wo=
+github.com/xybor-x/xylock v0.0.0-20220901051538-aabf74992171/go.mod h1:GuQfjF8rmIFUW/aNXPnauf//yKCex4MSr/plzSeIgxg=
+golang.org/x/sync v0.0.0-20220819030929-7fc1605a5dde h1:ejfdSekXMDxDLbRrJMwUk6KnSLZ2McaUCVcIKM+N6jc=
+golang.org/x/sync v0.0.0-20220819030929-7fc1605a5dde/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
