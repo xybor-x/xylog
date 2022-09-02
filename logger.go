@@ -22,14 +22,15 @@ import (
 type Logger struct {
 	f *filterer
 
-	fullname string
-	children map[string]*Logger
-	parent   *Logger
-	level    int
-	handlers map[*Handler]any
-	lock     xylock.RWLock
-	cache    map[int]bool
-	extra    string
+	fullname         string
+	children         map[string]*Logger
+	parent           *Logger
+	level            int
+	handlers         map[*Handler]any
+	lock             xylock.RWLock
+	cache            map[int]bool
+	extra            map[string]any
+	persistentFields []field
 }
 
 // newlogger creates a new logger with a name and parent. The fullname of logger
@@ -51,7 +52,7 @@ func newlogger(name string, parent *Logger) *Logger {
 		handlers: make(map[*Handler]any),
 		lock:     xylock.RWLock{},
 		cache:    make(map[int]bool),
-		extra:    "",
+		extra:    make(map[string]any),
 	}
 }
 
@@ -89,10 +90,15 @@ func (lg *Logger) RemoveFilter(f Filter) {
 	lg.f.RemoveFilter(f)
 }
 
-// AddExtra adds a fixed key-value pair to all logging messages.
+// AddExtra adds a custom macro to logging format.
 func (lg *Logger) AddExtra(key string, value any) {
-	var extra = key + "=" + fmt.Sprint(value)
-	lg.extra = prefixMessage(lg.extra, extra)
+	lg.extra[key] = value
+}
+
+// AddField adds a fixed key-value pair to all logging messages when using the
+// EventLogger.
+func (lg *Logger) AddField(key string, value any) {
+	lg.persistentFields = append(lg.persistentFields, field{key, value})
 }
 
 // filter checks all filters in filterer, if there is any failed filter, it will
@@ -217,21 +223,26 @@ func (lg *Logger) Logf(level int, s string, a ...any) {
 
 // Event creates an eventLogger which logs key-value pairs.
 func (lg *Logger) Event(e string) *EventLogger {
-	var elogger = &EventLogger{lg: lg}
+	var elogger = &EventLogger{
+		lg:     lg,
+		fields: make([]field, 0, 5),
+		isJSON: false,
+	}
+	elogger.fields = append(elogger.fields, lg.persistentFields...)
 	return elogger.Field("event", e)
 }
 
 // log is a low-level logging method which creates a LogRecord and then calls
 // all the handlers of this logger to handle the record.
-func (lg *Logger) log(level int, msg string) {
-	msg = prefixMessage(lg.extra, msg)
+func (lg *Logger) log(level int, msg any) {
 	var pc, filename, lineno, ok = runtime.Caller(skipCall)
 	if !ok {
 		filename = "unknown"
 		lineno = -1
 	}
 
-	var record = makeRecord(lg.fullname, level, filename, lineno, msg, pc)
+	var record = makeRecord(lg.fullname, level, filename, lineno, msg, pc,
+		lg.extra)
 
 	lg.handle(record)
 }

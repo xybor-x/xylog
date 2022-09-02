@@ -6,7 +6,7 @@ import (
 	"github.com/xybor-x/xylog"
 )
 
-func BenchmarkFormatterFormat(b *testing.B) {
+func BenchmarkTextFormatter(b *testing.B) {
 	var record = xylog.LogRecord{}
 	var formatter = xylog.NewTextFormatter(
 		"time=%(asctime)s " +
@@ -15,6 +15,20 @@ func BenchmarkFormatterFormat(b *testing.B) {
 			"module=%(module)s " +
 			"%(message)s",
 	)
+	for i := 0; i < b.N; i++ {
+		formatter.Format(record)
+	}
+}
+
+func BenchmarkJSONFormatter(b *testing.B) {
+	var record = xylog.LogRecord{}
+	var formatter = xylog.NewJSONFormatter().
+		AddField("asctime", "asctime").
+		AddField("created", "created").
+		AddField("filename", "filename").
+		AddField("funcname", "funcname").
+		AddField("levelname", "levelname")
+
 	for i := 0; i < b.N; i++ {
 		formatter.Format(record)
 	}

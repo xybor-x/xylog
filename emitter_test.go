@@ -12,7 +12,7 @@ import (
 type ErrorWriter struct{}
 
 func (ew *ErrorWriter) Write(p []byte) (n int, err error) {
-	return 0, xyerror.Error.New("unknown")
+	return 0, xyerror.BaseException.New("unknown")
 }
 
 func (ew *ErrorWriter) Close() error {
@@ -28,34 +28,34 @@ func TestNewStreamEmitterWithNil(t *testing.T) {
 func TestStreamEmitterEmit(t *testing.T) {
 	var emitter = xylog.NewStreamEmitter(os.Stderr)
 	xycond.ExpectNotPanic(func() {
-		emitter.Emit(xylog.LogRecord{})
+		emitter.Emit("")
 	}).Test(t)
 }
 
 func TestStreamEmitterEmitError(t *testing.T) {
 	var emitter = xylog.NewStreamEmitter(&ErrorWriter{})
 	xycond.ExpectPanic(func() {
-		emitter.Emit(xylog.LogRecord{})
+		emitter.Emit("")
 	}).Test(t)
 }
 
 func TestFileEmitter(t *testing.T) {
 	var emitter = xylog.NewFileEmitter("a.log")
 	xycond.ExpectNotPanic(func() {
-		emitter.Emit(xylog.LogRecord{})
+		emitter.Emit("")
 	}).Test(t)
 }
 
 func TestSizeRotatingFileEmitter(t *testing.T) {
 	var emitter = xylog.NewSizeRotatingFileEmitter("a.log", 100, 1)
 	xycond.ExpectNotPanic(func() {
-		emitter.Emit(xylog.LogRecord{})
+		emitter.Emit("")
 	}).Test(t)
 }
 
 func TestTimeRotatingFileEmitter(t *testing.T) {
 	var emitter = xylog.NewTimeRotatingFileEmitter("a.log", 100, 1)
 	xycond.ExpectNotPanic(func() {
-		emitter.Emit(xylog.LogRecord{})
+		emitter.Emit("")
 	}).Test(t)
 }

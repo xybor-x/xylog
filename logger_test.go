@@ -7,8 +7,6 @@ import (
 	"github.com/xybor-x/xylog"
 )
 
-type CapturedEmitter struct{}
-
 func checkLogOutput(t *testing.T, f func(), msg string, lv, loggerLv int) {
 	capturedOutput = ""
 	f()
@@ -19,8 +17,10 @@ func checkLogOutput(t *testing.T, f func(), msg string, lv, loggerLv int) {
 	}
 }
 
-func (h *CapturedEmitter) Emit(record xylog.LogRecord) {
-	capturedOutput = record.Message
+type CapturedEmitter struct{}
+
+func (h *CapturedEmitter) Emit(s string) {
+	capturedOutput = s
 }
 
 func (h *CapturedEmitter) SetFormatter(xylog.Formatter) {}
@@ -212,14 +212,13 @@ func TestLoggerFilterLog(t *testing.T) {
 	xycond.ExpectEmpty(capturedOutput).Test(t)
 }
 
-func TestLoggerAddExtra(t *testing.T) {
-	var handler = xylog.NewHandler("", &CapturedEmitter{})
+func TestLoggerAddFields(t *testing.T) {
 	var logger = xylog.GetLogger(t.Name())
+	logger.AddHandler(xylog.NewHandler("", &CapturedEmitter{}))
 	logger.SetLevel(xylog.DEBUG)
-	logger.AddHandler(handler)
-	logger.AddExtra("bar", "something")
+	logger.AddField("buzz", "bar")
 
 	capturedOutput = ""
-	logger.Debug("foo")
-	xycond.ExpectEqual(capturedOutput, "bar=something foo").Test(t)
+	logger.Event("foo").Debug()
+	xycond.ExpectEqual(capturedOutput, "buzz=bar event=foo").Test(t)
 }

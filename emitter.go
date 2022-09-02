@@ -21,29 +21,24 @@ type LogWriter interface {
 // Emitter instances dispatch logging events to specific destinations.
 type Emitter interface {
 	// Emit will be called after a record was decided to log.
-	Emit(LogRecord)
-
-	// SetFormatter sets the new formatter to Emitter.
-	SetFormatter(Formatter)
+	Emit(string)
 }
 
 // StreamEmitter writes logging message to a stream.
 type StreamEmitter struct {
-	stream    *bufio.Writer
-	formatter Formatter
+	stream *bufio.Writer
 }
 
 // NewStreamEmitter creates a StreamEmitter which writes message to a stream
 // (os.Stderr by default).
 func NewStreamEmitter(w io.Writer) *StreamEmitter {
-	var e = &StreamEmitter{formatter: defaultFormatter}
+	var e = &StreamEmitter{}
 	e.setStream(w)
 	return e
 }
 
 // Emit will be called after a record was decided to log.
-func (e *StreamEmitter) Emit(record LogRecord) {
-	var msg = e.formatter.Format(record)
+func (e *StreamEmitter) Emit(msg string) {
 	var _, err = e.stream.WriteString(msg + "\n")
 	if err == nil {
 		err = e.stream.Flush()
@@ -54,11 +49,6 @@ func (e *StreamEmitter) Emit(record LogRecord) {
 		log.Printf("An error occurs when logging: %s\n", err)
 		log.Panic(string(debug.Stack()))
 	}
-}
-
-// SetFormatter sets the new formatter to Emitter.
-func (e *StreamEmitter) SetFormatter(f Formatter) {
-	e.formatter = f
 }
 
 // setStream sets a new stream to emitter.
@@ -124,14 +114,14 @@ func NewTimeRotatingFileEmitter(
 
 // Emit calls StreamEmitter.Emit. Its also rotates the current logging file if
 // the condition has been met.
-func (e *FileEmitter) Emit(record LogRecord) {
+func (e *FileEmitter) Emit(msg string) {
 	if e.writer == nil {
 		e.open()
 	}
 	if e.rotator != nil && e.rotator.shouldRollover() {
 		e.doRollover()
 	}
-	e.StreamEmitter.Emit(record)
+	e.StreamEmitter.Emit(msg)
 }
 
 // open opens the writer and set the stream to StreamEmitter.
