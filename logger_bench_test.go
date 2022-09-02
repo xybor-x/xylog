@@ -7,11 +7,28 @@ import (
 	"github.com/xybor-x/xylog"
 )
 
+var DevnullEmitter *xylog.StreamEmitter
+
+func init() {
+	var devnull, err = os.OpenFile(os.DevNull, os.O_WRONLY, 0666)
+	if err == nil {
+		DevnullEmitter = xylog.NewStreamEmitter(devnull)
+	}
+}
+
 func BenchmarkLoggerWithoutLog(b *testing.B) {
 	var logger = xylog.GetLogger(b.Name())
 	logger.SetLevel(xylog.CRITICAL)
 	for i := 0; i < b.N; i++ {
 		logger.Debug("msg")
+	}
+}
+
+func BenchmarkEventLoggerWithoutLog(b *testing.B) {
+	var logger = xylog.GetLogger(b.Name())
+	logger.SetLevel(xylog.CRITICAL)
+	for i := 0; i < b.N; i++ {
+		logger.Event("foo").Field("foo", "bar").Field("bar", "foo").Debug()
 	}
 }
 
@@ -51,11 +68,10 @@ func benchEmitter(b *testing.B, logger *xylog.Logger, emitter xylog.Emitter) {
 
 func BenchmarkLoggerStreamEmitter(b *testing.B) {
 	var logger = xylog.GetLogger(b.Name())
-	var devnull, err = os.OpenFile(os.DevNull, os.O_WRONLY, 0666)
-	if err != nil {
-		b.Skipf("can not open /dev/null: %v", err)
+	if DevnullEmitter == nil {
+		b.Skipf("can not open /dev/null")
 	}
-	benchEmitter(b, logger, xylog.NewStreamEmitter(devnull))
+	benchEmitter(b, logger, DevnullEmitter)
 }
 func BenchmarkLoggerFileEmitter(b *testing.B) {
 	var logger = xylog.GetLogger(b.Name())

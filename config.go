@@ -17,7 +17,6 @@ func init() {
 	handlerManager = make(map[string]*Handler)
 
 	var handler = NewHandler("xybor", StderrEmitter)
-	handler.SetLevel(WARNING)
 	handler.SetFormatter(NewTextFormatter(
 		"time=%(asctime)-30s " +
 			"level=%(levelname)-8s " +
@@ -57,7 +56,7 @@ var startTime = time.Now().UnixMilli()
 // lock is used to serialize access to shared data structures in this module.
 var lock = xylock.RWLock{}
 
-// processid is alway fixed and used to fill %(process) macro.
+// processid is always fixed and used to fill %(process) macro.
 var processid = os.Getpid()
 
 // rootLogger is the logger managing all loggers in program, it only should be
@@ -163,7 +162,7 @@ func getLevelName(level int) string {
 func checkLevel(level int) int {
 	return lock.RLockFunc(func() any {
 		if _, ok := levelToName[level]; !ok {
-			xycond.Panic("level %d is not registered", level)
+			xycond.Panicf("level %d is not registered", level)
 		}
 		return level
 	}).(int)
@@ -182,7 +181,7 @@ func GetHandler(name string) *Handler {
 // mapHandler associates a name with a handler.
 func mapHandler(name string, h *Handler) {
 	if _, ok := handlerManager[name]; ok {
-		xycond.Panic("do not set handler with the same name (%s)", name)
+		xycond.Panicf("do not set handler with the same name (%s)", name)
 	}
 	handlerManager[name] = h
 }

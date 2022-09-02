@@ -1,6 +1,8 @@
 package xylog
 
 import (
+	"fmt"
+
 	"github.com/xybor-x/xycond"
 	"github.com/xybor-x/xylock"
 )
@@ -12,8 +14,9 @@ type Handler struct {
 	f *filterer
 	e Emitter
 
-	level int
-	lock  xylock.RWLock
+	level     int
+	lock      xylock.RWLock
+	formatter Formatter
 }
 
 // NewHandler creates a Handler with a specified Emitter.
@@ -26,10 +29,11 @@ func NewHandler(name string, e Emitter) *Handler {
 	xycond.AssertNil(handler)
 
 	handler = &Handler{
-		f:     newfilterer(),
-		e:     e,
-		level: NOTSET,
-		lock:  xylock.RWLock{},
+		f:         newfilterer(),
+		e:         e,
+		level:     NOTSET,
+		lock:      xylock.RWLock{},
+		formatter: defaultFormatter,
 	}
 
 	if name != "" {
@@ -46,7 +50,7 @@ func (h *Handler) SetLevel(level int) {
 
 // SetFormatter sets the new formatter of handler.
 func (h *Handler) SetFormatter(f Formatter) {
-	h.lock.WLockFunc(func() { h.e.SetFormatter(f) })
+	h.lock.WLockFunc(func() { h.formatter = f })
 }
 
 // AddFilter adds a specified filter.
@@ -70,6 +74,11 @@ func (h *Handler) filter(r LogRecord) bool {
 func (h *Handler) handle(record LogRecord) {
 	var level = h.lock.RLockFunc(func() any { return h.level }).(int)
 	if h.filter(record) && record.LevelNo >= level {
-		h.lock.WLockFunc(func() { h.e.Emit(record) })
+		var msg, err = h.formatter.Format(record)
+		if err != nil {
+			msg = fmt.Sprint("An error occurred while formatting the message:",
+				err)
+		}
+		h.lock.WLockFunc(func() { h.e.Emit(msg) })
 	}
 }

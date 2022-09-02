@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/xybor-x/xycond"
+	"github.com/xybor-x/xyerror"
 )
 
 // A LogRecord instance represents an event being logged.
@@ -21,6 +21,9 @@ type LogRecord struct {
 
 	// Time when the LogRecord was created (time.Now().Unix() return value).
 	Created int64
+
+	// Extra provides possibility of using more macros.
+	Extra map[string]any
 
 	// Filename portion of pathname.
 	FileName string
@@ -40,7 +43,7 @@ type LogRecord struct {
 	LineNo int
 
 	// The logging message.
-	Message string
+	Message any
 
 	// The module called log method.
 	Module string
@@ -62,81 +65,48 @@ type LogRecord struct {
 	RelativeCreated int64
 }
 
-func (r LogRecord) mapIndex(i int) any {
-	switch i {
-	case 0:
-		return r.Asctime
-	case 1:
-		return r.Created
-	case 2:
-		return r.FileName
-	case 3:
-		return r.FuncName
-	case 4:
-		return r.LevelName
-	case 5:
-		return r.LevelNo
-	case 6:
-		return r.LineNo
-	case 7:
-		return r.Message
-	case 8:
-		return r.Module
-	case 9:
-		return r.Msecs
-	case 10:
-		return r.Name
-	case 11:
-		return r.PathName
-	case 12:
-		return r.Process
-	case 13:
-		return r.RelativeCreated
-	default:
-		xycond.Panic("unknown index %d", i)
-		return nil
-	}
-}
-
-func (r LogRecord) mapName(name string) int {
+func (r LogRecord) getAttributeByName(name string) (any, error) {
 	switch name {
 	case "asctime":
-		return 0
+		return r.Asctime, nil
 	case "created":
-		return 1
+		return r.Created, nil
 	case "filename":
-		return 2
+		return r.FileName, nil
 	case "funcname":
-		return 3
+		return r.FuncName, nil
 	case "levelname":
-		return 4
+		return r.LevelName, nil
 	case "levelno":
-		return 5
+		return r.LevelNo, nil
 	case "lineno":
-		return 6
+		return r.LineNo, nil
 	case "message":
-		return 7
+		return r.Message, nil
 	case "module":
-		return 8
+		return r.Module, nil
 	case "msecs":
-		return 9
+		return r.Msecs, nil
 	case "name":
-		return 10
+		return r.Name, nil
 	case "pathname":
-		return 11
+		return r.PathName, nil
 	case "process":
-		return 12
+		return r.Process, nil
 	case "relativeCreated":
-		return 13
+		return r.RelativeCreated, nil
 	default:
-		xycond.Panic("unknown name %s", name)
-		return -1
+		if attr, ok := r.Extra[name]; ok {
+			return attr, nil
+		}
+		return nil, xyerror.ValueError.Newf("not found attribute %s", name)
 	}
 }
 
 // makeRecord creates specialized LogRecords.
 func makeRecord(
-	name string, level int, pathname string, lineno int, msg string, pc uintptr,
+	name string, level int, pathname string, lineno int, msg any, pc uintptr,
+	extra map[string]any,
 ) LogRecord {
 	var created = time.Now()
 	var module, funcname = extractFromPC(pc)
@@ -144,6 +114,7 @@ func makeRecord(
 	return LogRecord{
 		Asctime:         created.Format(timeLayout),
 		Created:         created.Unix(),
+		Extra:           extra,
 		FileName:        filepath.Base(pathname),
 		FuncName:        funcname,
 		LevelName:       getLevelName(level),

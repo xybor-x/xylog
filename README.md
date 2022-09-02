@@ -51,6 +51,16 @@ To adjust the level, using `SetLevel` method.
 `EventLogger` is a logger wrapper supporting to compose logging message by
 key-value fields.
 
+Use `Event` method of `Logger` to create a `EventLogger`. You need to create a
+unique `EventLogger` each time you want to log.
+
+If you call `Logger.AddField`, every `EventLogger` created by that `Logger` will
+have the added fields without adding again.
+
+`EventLogger` also provides JSON format for logging message (only the message
+macro). You can use this format even if you do not set formatter as a
+`JSONFormatter`.
+
 ## Logging level
 
 The numeric values of logging levels are given in the following table. These are
@@ -100,10 +110,12 @@ log into another file if the file exceed the limit size or time.
 for converting a `LogRecord` to a string which can be interpreted by either a
 human or an external system.
 
-`TextFormatter` is a built-in `Formatter` which uses logging macros to format
-the message.
+`TextFormatter` is a simple `Formatter` which uses logging macros and format
+string to format the message.
 
-| MACROS            | DESCRIPTION                                                                                                                                      |
+`JSONFormatter` allows to create a logging message of JSON format.
+
+| MACRO             | DESCRIPTION                                                                                                                                      |
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `asctime`         | Textual time when the LogRecord was created.                                                                                                     |
 | `created`         | Time when the LogRecord was created (time.Now().Unix() return value).                                                                            |
@@ -131,19 +143,23 @@ if it allows to log the `LogRecord`, and vice versa.
 
 # Benchmark
 
-| op name           | time per op |
-| ----------------- | ----------- |
-| GetSameLogger     | 180ns       |
-| GetRandomLogger   | 315ns       |
-| GetSameHandler    | 5ns         |
-| GetRandomHandler  | 17ns        |
-| TextFormatter     | 734ns       |
-| LogWithoutHandler | 31ns        |
-| LogWithOneHandler | 2970ns      |
-| LogWith100Handler | 24912ns     |
-| LogWithStream     | 8608ns      |
-| LogWithFile       | 13509ns     |
-| LogWithRotateFile | 20082ns     |
+CPU: Intel(R) Xeon(R) Platinum 8272CL CPU @ 2.60GHz
+
+| op name                | time per op |
+| ---------------------- | ----------- |
+| GetSameLogger          | 199ns       |
+| GetRandomLogger        | 325ns       |
+| GetSameHandler         | 5ns         |
+| GetRandomHandler       | 30ns        |
+| TextFormatter          | 632ns       |
+| JSONFormatter          | 3032ns      |
+| LogWithoutHandler      | 36ns        |
+| EventLogWithoutHandler | 246ns       |
+| LogWithOneHandler      | 3604ns      |
+| LogWith100Handler      | 101268ns    |
+| LogWithStream          | 7389ns      |
+| LogWithFile            | 11372ns     |
+| LogWithRotateFile      | 16234ns     |
 
 # Example
 
@@ -221,10 +237,14 @@ handler.SetFormatter(xylog.NewTextFormatter(
 var logger = xylog.GetLogger("example")
 logger.AddHandler(handler)
 logger.SetLevel(xylog.DEBUG)
+logger.AddField("boss", "foo")
+
 logger.Event("create").Field("product", 1235).Debug()
+logger.Event("use").Field("product", "bar").JSON().Debug()
 
 // Output:
-// module=example level=DEBUG event=create product=1235
+// module=example level=DEBUG boss=foo event=create product=1235
+// module=example level=DEBUG {"boss":"foo","event":"use","product":"bar"}
 ```
 
 ## Filter definition

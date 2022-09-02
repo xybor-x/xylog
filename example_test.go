@@ -8,7 +8,7 @@ import (
 	"github.com/xybor-x/xylog"
 )
 
-// NOTE: In example_test.go, xylog.StdoutEmitter is not accepted as the compared
+// NOTE: In example_test.go, xylog.StdoutEmitter is not accepted as the standard
 // output. For this reason, in all examples, we must create a new one.
 // In reality, you should use xylog.StdoutEmitter or xylog.StderrEmitter
 // instead.
@@ -19,10 +19,10 @@ func Example() {
 
 	// Handlers in the root logger will affect to other logger, so in this
 	// example, it should remove this handler from the root logger after test.
-	xylog.SetLevel(xylog.DEBUG)
+	xylog.AddHandler(handler)
 	defer xylog.RemoveHandler(handler)
 
-	xylog.AddHandler(handler)
+	xylog.SetLevel(xylog.DEBUG)
 	xylog.Debug("foo")
 	xylog.Infof("foo %s", "bar")
 
@@ -33,24 +33,21 @@ func Example() {
 
 func ExampleGetLogger() {
 	var handler = xylog.NewHandler("", xylog.NewStreamEmitter(os.Stdout))
-	handler.SetFormatter(xylog.NewTextFormatter(
-		"module=%(name)s level=%(levelname)s %(message)s"))
 
-	var logger = xylog.GetLogger("example")
+	var logger = xylog.GetLogger("example.GetLogger")
 	logger.AddHandler(handler)
 	logger.SetLevel(xylog.DEBUG)
-	logger.AddExtra("some", "thing")
 	logger.Debugf("foo %s", "bar")
 
 	// Output:
-	// module=example level=DEBUG some=thing foo bar
+	// foo bar
 }
 
 func ExampleHandler() {
 	// You can use a handler throughout program without storing it in global
 	// scope. All handlers can be identified by their names.
-	var handlerA = xylog.NewHandler("example", xylog.StdoutEmitter)
-	var handlerB = xylog.GetHandler("example")
+	var handlerA = xylog.NewHandler("example.Handler", xylog.StdoutEmitter)
+	var handlerB = xylog.GetHandler("example.Handler")
 	if handlerA == handlerB {
 		fmt.Println("handlerA == handlerB")
 	} else {
@@ -71,13 +68,63 @@ func ExampleHandler() {
 	// handlerC != handlerD
 }
 
+func ExampleFormatter() {
+	var handler = xylog.NewHandler("", xylog.NewStreamEmitter(os.Stdout))
+	handler.SetFormatter(xylog.NewTextFormatter(
+		"module=%(name)s level=%(levelname)s %(message)s custom=%(custom)s"))
+
+	var logger = xylog.GetLogger("example.Formatter")
+	logger.AddExtra("custom", "something")
+	logger.AddHandler(handler)
+	logger.SetLevel(xylog.DEBUG)
+	logger.Debug("product=1235")
+
+	// Output:
+	// module=example.Formatter level=DEBUG product=1235 custom=something
+}
+
+func ExampleEventLogger() {
+	var handler = xylog.NewHandler("", xylog.NewStreamEmitter(os.Stdout))
+	handler.SetFormatter(xylog.NewTextFormatter(
+		"module=%(name)s level=%(levelname)s %(message)s"))
+
+	var logger = xylog.GetLogger("example.EventLogger")
+	logger.AddHandler(handler)
+	logger.SetLevel(xylog.DEBUG)
+	logger.AddField("boss", "foo")
+
+	logger.Event("create").Field("product", 1235).Debug()
+	logger.Event("use").Field("product", "bar").JSON().Debug()
+
+	// Output:
+	// module=example.EventLogger level=DEBUG boss=foo event=create product=1235
+	// module=example.EventLogger level=DEBUG {"boss":"foo","event":"use","product":"bar"}
+}
+
+func ExampleJSONFormatter() {
+	var formatter = xylog.NewJSONFormatter().
+		AddField("module", "name").
+		AddField("level", "levelname").
+		AddField("message", "message")
+	var handler = xylog.NewHandler("", xylog.NewStreamEmitter(os.Stdout))
+	handler.SetFormatter(formatter)
+
+	var logger = xylog.GetLogger("example.JSONFormatter")
+	logger.AddHandler(handler)
+	logger.SetLevel(xylog.DEBUG)
+	logger.Event("create").Field("product", 1235).JSON().Debug()
+
+	// Output:
+	// {"level":"DEBUG","message":{"event":"create","product":1235},"module":"example.JSONFormatter"}
+}
+
 func ExampleNewSizeRotatingFileEmitter() {
 	// Create a rotating emitter which rotates to another files if current file
 	// size is over than 30 bytes. Backup maximum of two log files.
 	var emitter = xylog.NewSizeRotatingFileEmitter("exampleSize.log", 30, 2)
 	var handler = xylog.NewHandler("", emitter)
 	handler.SetFormatter(xylog.NewTextFormatter("%(message)s"))
-	var logger = xylog.GetLogger("example_file_emitter")
+	var logger = xylog.GetLogger("example.SizeRotatingFileEmitter")
 	logger.SetLevel(xylog.DEBUG)
 	logger.AddHandler(handler)
 
@@ -111,7 +158,7 @@ func ExampleNewTimeRotatingFileEmitter() {
 		"exampleTime.log", time.Second, 2)
 	var handler = xylog.NewHandler("", emitter)
 	handler.SetFormatter(xylog.NewTextFormatter("%(message)s"))
-	var logger = xylog.GetLogger("example_file_emitter")
+	var logger = xylog.GetLogger("example.TimeRotatingFileEmitter")
 	logger.SetLevel(xylog.DEBUG)
 	logger.AddHandler(handler)
 
@@ -137,18 +184,4 @@ func ExampleNewTimeRotatingFileEmitter() {
 	// Created exampleTime.log
 	// Created exampleTime.log.1
 	// Created exampleTime.log.2
-}
-
-func ExampleEventLogger() {
-	var handler = xylog.NewHandler("", xylog.NewStreamEmitter(os.Stdout))
-	handler.SetFormatter(xylog.NewTextFormatter(
-		"module=%(name)s level=%(levelname)s %(message)s"))
-
-	var logger = xylog.GetLogger("eventlogger")
-	logger.AddHandler(handler)
-	logger.SetLevel(xylog.DEBUG)
-	logger.Event("create").Field("product", 1235).Debug()
-
-	// Output:
-	// module=eventlogger level=DEBUG event=create product=1235
 }
