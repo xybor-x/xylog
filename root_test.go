@@ -108,3 +108,17 @@ func TestRootLogMethods(t *testing.T) {
 		}
 	})
 }
+
+func TestRootLoggerEvent(t *testing.T) {
+	testRootLogger(t, func(loggerLevel int) {
+		checkLogOutput(t, func() {
+			xylog.Event("foo").Field("bar", "buzz").Info()
+		}, "event=foo bar=buzz", xylog.INFO, xylog.INFO)
+	})
+}
+
+func TestRootLoggerStack(t *testing.T) {
+	xycond.ExpectNotPanic(func() {
+		xylog.Stack(xylog.ERROR)
+	}).Test(t)
+}

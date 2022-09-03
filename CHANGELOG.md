@@ -2,6 +2,7 @@
 
 -   Add JSONFormatter.
 -   Change extra, message, and log design.
+-   It is possible to log stack trace.
 
 # v0.0.1 (Sep 02, 2022)
 

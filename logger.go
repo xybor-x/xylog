@@ -3,6 +3,8 @@ package xylog
 import (
 	"fmt"
 	"runtime"
+	"runtime/debug"
+	"strings"
 
 	"github.com/xybor-x/xycond"
 	"github.com/xybor-x/xylock"
@@ -221,7 +223,7 @@ func (lg *Logger) Logf(level int, s string, a ...any) {
 	}
 }
 
-// Event creates an eventLogger which logs key-value pairs.
+// Event creates an EventLogger which logs key-value pairs.
 func (lg *Logger) Event(e string) *EventLogger {
 	var elogger = &EventLogger{
 		lg:     lg,
@@ -230,6 +232,16 @@ func (lg *Logger) Event(e string) *EventLogger {
 	}
 	elogger.fields = append(elogger.fields, lg.persistentFields...)
 	return elogger.Field("event", e)
+}
+
+// Stack logs the stack trace.
+func (lg *Logger) Stack(level int) {
+	var s = string(debug.Stack())
+	var lines = strings.Split(s, "\n")
+
+	for i := range lines {
+		lg.log(level, lines[i])
+	}
 }
 
 // log is a low-level logging method which creates a LogRecord and then calls

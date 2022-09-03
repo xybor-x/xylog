@@ -1,16 +1,17 @@
 package xylog_test
 
 import (
+	"os"
 	"testing"
 
 	"github.com/xybor-x/xycond"
 	"github.com/xybor-x/xylog"
 )
 
-func checkLogOutput(t *testing.T, f func(), msg string, lv, loggerLv int) {
+func checkLogOutput(t *testing.T, f func(), msg string, lv, loggerlv int) {
 	capturedOutput = ""
 	f()
-	if lv < loggerLv {
+	if lv < loggerlv {
 		xycond.ExpectEmpty(capturedOutput).Test(t)
 	} else {
 		xycond.ExpectEqual(capturedOutput, msg).Test(t)
@@ -184,6 +185,18 @@ func TestLoggerLogValidCustomLevel(t *testing.T) {
 		checkLogOutput(t, func() { logger.Logf(validCustomLevels[i], "foo") },
 			"foo", validCustomLevels[i], loggerLevel)
 	}
+}
+
+func TestLoggerStack(t *testing.T) {
+	var handler = xylog.NewHandler("", xylog.NewStreamEmitter(os.Stdout))
+	handler.SetFormatter(xylog.NewTextFormatter("%(levelname)s %(message)s"))
+	var logger = xylog.GetLogger("example.Stack")
+	logger.SetLevel(xylog.DEBUG)
+	logger.AddHandler(handler)
+
+	xycond.ExpectNotPanic(func() {
+		logger.Stack(xylog.DEBUG)
+	}).Test(t)
 }
 
 func TestLoggerFilter(t *testing.T) {
