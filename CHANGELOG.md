@@ -1,4 +1,4 @@
-# Developing
+# v0.1.0 (Sep 04, 2022)
 
 -   Add JSONFormatter and StructureFormatter.
 -   Change extra, message, and log design.
