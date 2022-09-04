@@ -1,6 +1,6 @@
 # Developing
 
--   Add JSONFormatter.
+-   Add JSONFormatter and StructureFormatter.
 -   Change extra, message, and log design.
 -   It is possible to log stack trace.
 

@@ -115,6 +115,9 @@ string to format the message.
 
 `JSONFormatter` allows to create a logging message of JSON format.
 
+`StructureFormatter` allows to create a logging message with format of
+`key=value`.
+
 | MACRO             | DESCRIPTION                                                                                                                                      |
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `asctime`         | Textual time when the LogRecord was created.                                                                                                     |
@@ -163,6 +166,8 @@ CPU: Intel(R) Xeon(R) Platinum 8272CL CPU @ 2.60GHz
 
 # Example
 
+See more examples [here](./example_test.go).
+
 ## Simple usage
 
 ```golang
@@ -192,20 +197,20 @@ logger.SetLevel(xylog.DEBUG)
 logger.AddHandler(handler)
 
 for i := 0; i < 20; i++ {
-	// logger will write 80 bytes (including newlines).
-	logger.Debug("foo")
+    // logger will write 80 bytes (including newlines).
+    logger.Debug("foo")
 }
 
 if _, err := os.Stat("example.log"); err == nil {
-	fmt.Println("Created example.log")
+    fmt.Println("Created example.log")
 }
 
 if _, err := os.Stat("example.log.1"); err == nil {
-	fmt.Println("Created example.log.1")
+    fmt.Println("Created example.log.1")
 }
 
 if _, err := os.Stat("example.log.2"); err == nil {
-	fmt.Println("Created example.log.2")
+    fmt.Println("Created example.log.2")
 }
 
 // Output:
@@ -225,6 +230,25 @@ logger.Critical("foo foo")
 
 // Output:
 // CRITICAL foo foo
+```
+
+## Formatters
+
+```golang
+var formatter = xylog.NewStructureFormatter().
+    AddField("module", "name").
+    AddField("level", "levelname").
+    AddField("", "message")
+var handler = xylog.NewHandler("", xylog.NewStreamEmitter(os.Stdout))
+handler.SetFormatter(formatter)
+
+var logger = xylog.GetLogger("example.StructureFormatter")
+logger.AddHandler(handler)
+logger.SetLevel(xylog.DEBUG)
+logger.Event("create").Field("employee", "david").Debug()
+
+// Output:
+// module=example.StructureFormatter level=DEBUG event=create employee=david
 ```
 
 ## Event Logger
