@@ -102,29 +102,20 @@ func ExampleEventLogger() {
 }
 
 func ExampleJSONFormatter() {
-	var formatter1 = xylog.NewJSONFormatter().
+	var formatter = xylog.NewJSONFormatter().
 		AddField("module", "name").
 		AddField("level", "levelname").
 		AddField("", "message")
-	var handler1 = xylog.NewHandler("", xylog.NewStreamEmitter(os.Stdout))
-	handler1.SetFormatter(formatter1)
-
-	var formatter2 = xylog.NewJSONFormatter().
-		AddField("module", "name").
-		AddField("level", "levelname").
-		AddField("message", "message")
-	var handler2 = xylog.NewHandler("", xylog.NewStreamEmitter(os.Stdout))
-	handler2.SetFormatter(formatter2)
+	var handler = xylog.NewHandler("", xylog.NewStreamEmitter(os.Stdout))
+	handler.SetFormatter(formatter)
 
 	var logger = xylog.GetLogger("example.JSONFormatter")
-	logger.AddHandler(handler1)
-	logger.AddHandler(handler2)
+	logger.AddHandler(handler)
 	logger.SetLevel(xylog.DEBUG)
 	logger.Event("create").Field("product", 1235).JSON().Debug()
 
 	// Output:
 	// {"event":"create","level":"DEBUG","module":"example.JSONFormatter","product":1235}
-	// {"level":"DEBUG","message":{"event":"create","product":1235},"module":"example.JSONFormatter"}
 }
 
 func ExampleStructureFormatter() {
