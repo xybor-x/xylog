@@ -20,6 +20,7 @@ func init() {
 	handler.SetFormatter(NewTextFormatter(
 		"time=%(asctime)-30s " +
 			"level=%(levelname)-8s " +
+			"module=%(name)s" +
 			"%(message)s",
 	))
 

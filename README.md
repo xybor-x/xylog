@@ -310,16 +310,18 @@ xylog.Debug("bar")
 // bar
 ```
 
-## Xybor standard format
+## Standard xybor logger
 
 ```golang
-// All loggers need to be started with the prefix "xybor."
+// If a logger is named with the prefix of "xybor.", it belongs to the xybor
+// logger.
+// This logger has the following properties:
+//  - Logger and handler level is WARNING.
+//  - Logging messages contain time, level name, logger name.
+//  - Output is stderr.
 var logger = xylog.GetLogger("xybor.foo")
-
-func main() {
-    logger.Debug(1)
-}
+logger.Debug("start")
 
 // Output:
-// time=[time] source=example.go.main:13 level=DEBUG module=foo message=1
+// time=[time] level=DEBUG module=xybor.foo message=start
 ```
