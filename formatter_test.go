@@ -8,6 +8,23 @@ import (
 	"github.com/xybor-x/xylog"
 )
 
+var fullrecord = xylog.LogRecord{
+	Asctime:         "ASCTIME",
+	Created:         1,
+	FileName:        "FILENAME",
+	FuncName:        "FUNCNAME",
+	LevelName:       "LEVELNAME",
+	LevelNo:         2,
+	LineNo:          3,
+	Message:         "MESSAGE",
+	Module:          "MODULE",
+	Msecs:           4,
+	Name:            "NAME",
+	PathName:        "PATHNAME",
+	Process:         5,
+	RelativeCreated: 6,
+}
+
 func TestNewTextFormatter(t *testing.T) {
 	var f = xylog.NewTextFormatter(
 		"time=%(asctime)s %(levelno).3d %(module)s something")
@@ -32,22 +49,7 @@ func TestTextFormatter(t *testing.T) {
 			"%(levelno)d %(lineno)d %(message)s %(module)s %(msecs)d " +
 			"%(name)s %(pathname)s %(process)d %(relativeCreated)d")
 
-	var s, err = formatter.Format(xylog.LogRecord{
-		Asctime:         "ASCTIME",
-		Created:         1,
-		FileName:        "FILENAME",
-		FuncName:        "FUNCNAME",
-		LevelName:       "LEVELNAME",
-		LevelNo:         2,
-		LineNo:          3,
-		Message:         "MESSAGE",
-		Module:          "MODULE",
-		Msecs:           4,
-		Name:            "NAME",
-		PathName:        "PATHNAME",
-		Process:         5,
-		RelativeCreated: 6,
-	})
+	var s, err = formatter.Format(fullrecord)
 
 	xycond.ExpectError(err, nil).Test(t)
 	xycond.ExpectEqual(s, "ASCTIME 1 FILENAME FUNCNAME LEVELNAME 2 3 MESSAGE "+
@@ -70,26 +72,36 @@ func TestJSONFormatter(t *testing.T) {
 		AddField("process", "process").
 		AddField("relativeCreated", "relativeCreated")
 
-	var s, err = formatter.Format(xylog.LogRecord{
-		Asctime:         "ASCTIME",
-		Created:         1,
-		FileName:        "FILENAME",
-		FuncName:        "FUNCNAME",
-		LevelName:       "LEVELNAME",
-		LevelNo:         2,
-		LineNo:          3,
-		Message:         "MESSAGE",
-		Module:          "MODULE",
-		Msecs:           4,
-		Name:            "NAME",
-		PathName:        "PATHNAME",
-		Process:         5,
-		RelativeCreated: 6,
-	})
+	var s, err = formatter.Format(fullrecord)
 
 	xycond.ExpectError(err, nil).Test(t)
 	xycond.ExpectEqual(s, `{"asctime":"ASCTIME","created":1,"filename":`+
 		`"FILENAME","funcname":"FUNCNAME","levelname":"LEVELNAME","levelno":2,`+
 		`"lineno":3,"message":"MESSAGE","module":"MODULE","msecs":4,`+
 		`"pathname":"PATHNAME","process":5,"relativeCreated":6}`).Test(t)
+}
+
+func TestStructureFormatter(t *testing.T) {
+	var formatter = xylog.NewStructureFormatter().
+		AddField("asctime", "asctime").
+		AddField("created", "created").
+		AddField("filename", "filename").
+		AddField("funcname", "funcname").
+		AddField("levelname", "levelname").
+		AddField("levelno", "levelno").
+		AddField("lineno", "lineno").
+		AddField("message", "message").
+		AddField("module", "module").
+		AddField("msecs", "msecs").
+		AddField("pathname", "pathname").
+		AddField("process", "process").
+		AddField("relativeCreated", "relativeCreated")
+
+	var s, err = formatter.Format(fullrecord)
+
+	xycond.ExpectError(err, nil).Test(t)
+	xycond.ExpectEqual(s, "asctime=ASCTIME created=1 filename=FILENAME "+
+		"funcname=FUNCNAME levelname=LEVELNAME levelno=2 lineno=3 "+
+		"message=MESSAGE module=MODULE msecs=4 pathname=PATHNAME process=5 "+
+		"relativeCreated=6").Test(t)
 }
