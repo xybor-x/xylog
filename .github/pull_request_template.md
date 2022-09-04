@@ -1,10 +1,6 @@
 #### Issue
 
--   Jira or Github issue link.
-
-#### Description
-
--   Problem, Solution.
+-   Issue link.
 
 #### Changes
 
@@ -19,6 +15,6 @@
 
 #### Checklist
 
--   [ ] Check README.md.
--   [ ] Check CHANGELOG.md
--   [ ] Check comments.
+-   [ ] Checked README.md.
+-   [ ] Checked CHANGELOG.md
+-   [ ] Checked comments.
