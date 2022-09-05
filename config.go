@@ -2,9 +2,9 @@
 package xylog
 
 import (
+	"fmt"
 	"io/fs"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/xybor-x/xycond"
@@ -12,11 +12,14 @@ import (
 )
 
 func init() {
+	lastHandler.AddEmitter(StderrEmitter)
+
 	rootLogger = newlogger("", nil)
 	rootLogger.SetLevel(WARNING)
 	handlerManager = make(map[string]*Handler)
 
-	var handler = NewHandler("xybor", StderrEmitter)
+	var handler = GetHandler("xybor")
+	handler.AddEmitter(StderrEmitter)
 	handler.SetFormatter(NewTextFormatter(
 		"time=%(asctime)-30s " +
 			"level=%(levelname)-8s " +
@@ -71,7 +74,7 @@ var timeLayout = time.RFC3339Nano
 var defaultFormatter = NewTextFormatter("%(message)s")
 
 // lastHandler is used when no handler is configured to handle the log record.
-var lastHandler = NewHandler("", StderrEmitter)
+var lastHandler = GetHandler("")
 
 // handlerManager is a map to search handler by name.
 var handlerManager map[string]*Handler
@@ -131,27 +134,6 @@ func AddLevel(level int, levelName string) {
 	lock.WLockFunc(func() { levelToName[level] = levelName })
 }
 
-// GetLogger gets a logger with the specified name (channel name), creating it
-// if it doesn't yet exist. This name is a dot-separated hierarchical name, such
-// as "a", "a.b", "a.b.c" or similar.
-//
-// Leave name as empty string to get the root logger.
-func GetLogger(name string) *Logger {
-	if name == "" {
-		return rootLogger
-	}
-	return lock.RWLockFunc(func() any {
-		var lg = rootLogger
-		for _, part := range strings.Split(name, ".") {
-			if _, ok := lg.children[part]; !ok {
-				lg.children[part] = newlogger(part, lg)
-			}
-			lg = lg.children[part]
-		}
-		return lg
-	}).(*Logger)
-}
-
 // getLevelName returns a name associated with the given level.
 func getLevelName(level int) string {
 	return lock.RLockFunc(func() any {
@@ -169,20 +151,23 @@ func checkLevel(level int) int {
 	}).(int)
 }
 
-// GetHandler returns the handler associated with the name. If no handler found,
-// returns nil.
-func GetHandler(name string) *Handler {
-	var h, ok = handlerManager[name]
-	if ok {
-		return h
-	}
-	return nil
-}
-
 // mapHandler associates a name with a handler.
 func mapHandler(name string, h *Handler) {
 	if _, ok := handlerManager[name]; ok {
 		xycond.Panicf("do not set handler with the same name (%s)", name)
 	}
 	handlerManager[name] = h
+}
+
+// prefixMessage adds a prefix to origin message if the prefix is not empty.
+func prefixMessage(prefix, msg string) string {
+	if prefix != "" {
+		msg = fmt.Sprintf("%s %s", prefix, msg)
+	}
+	return msg
+}
+
+type field struct {
+	key   string
+	value any
 }

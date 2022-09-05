@@ -70,11 +70,11 @@ func TestLoggerInvalidCustomLevel(t *testing.T) {
 }
 
 func TestLoggerHandler(t *testing.T) {
-	var expectedHandler = xylog.NewHandler("", &CapturedEmitter{})
+	var handler = xylog.GetHandler("")
+	handler.AddEmitter(&CapturedEmitter{})
 	var logger = xylog.GetLogger(t.Name())
 	xycond.ExpectNotPanic(func() {
-		logger.AddHandler(expectedHandler)
-		logger.RemoveHandler(expectedHandler)
+		logger.AddHandler(handler)
 	}).Test(t)
 }
 
@@ -85,17 +85,12 @@ func TestLoggerAddHandlerNil(t *testing.T) {
 	}).Test(t)
 }
 
-func TestLoggerRemoveNotExistedHandler(t *testing.T) {
-	var logger = xylog.GetLogger(t.Name())
-	xycond.ExpectNotPanic(func() {
-		logger.RemoveHandler(xylog.NewHandler("", xylog.StderrEmitter))
-	}).Test(t)
-}
-
 func TestLoggerLogfMethods(t *testing.T) {
 	var loggerLevel = xylog.WARN
+	var handler = xylog.GetHandler("")
+	handler.AddEmitter(&CapturedEmitter{})
 	var logger = xylog.GetLogger(t.Name())
-	logger.AddHandler(xylog.NewHandler("", &CapturedEmitter{}))
+	logger.AddHandler(handler)
 	logger.SetLevel(loggerLevel)
 
 	var loggerMethods = map[int]func(string, ...any){
@@ -113,8 +108,10 @@ func TestLoggerLogfMethods(t *testing.T) {
 
 func TestLoggerLogMethods(t *testing.T) {
 	var loggerLevel = xylog.WARN
+	var handler = xylog.GetHandler("")
+	handler.AddEmitter(&CapturedEmitter{})
 	var logger = xylog.GetLogger(t.Name())
-	logger.AddHandler(xylog.NewHandler("", &CapturedEmitter{}))
+	logger.AddHandler(handler)
 	logger.SetLevel(loggerLevel)
 
 	var loggerMethods = map[int]func(...any){
@@ -132,7 +129,8 @@ func TestLoggerLogMethods(t *testing.T) {
 
 func TestLoggerCallHandlerHierarchy(t *testing.T) {
 	var expectedMessage = "foo"
-	var handler = xylog.NewHandler("", &CapturedEmitter{})
+	var handler = xylog.GetHandler("")
+	handler.AddEmitter(&CapturedEmitter{})
 	var logger = xylog.GetLogger(t.Name())
 	logger.SetLevel(xylog.DEBUG)
 	logger.AddHandler(handler)
@@ -161,8 +159,10 @@ func TestLoggerLogNotSetLevel(t *testing.T) {
 }
 
 func TestLoggerLogInvalidCustomLevel(t *testing.T) {
+	var handler = xylog.GetHandler("")
+	handler.AddEmitter(&CapturedEmitter{})
 	var logger = xylog.GetLogger(t.Name())
-	logger.AddHandler(xylog.NewHandler("", &CapturedEmitter{}))
+	logger.AddHandler(handler)
 	logger.SetLevel(xylog.DEBUG)
 
 	for i := range invalidCustomLevels {
@@ -177,8 +177,10 @@ func TestLoggerLogInvalidCustomLevel(t *testing.T) {
 
 func TestLoggerLogValidCustomLevel(t *testing.T) {
 	var loggerLevel = xylog.DEBUG
+	var handler = xylog.GetHandler("")
+	handler.AddEmitter(&CapturedEmitter{})
 	var logger = xylog.GetLogger(t.Name())
-	logger.AddHandler(xylog.NewHandler("", &CapturedEmitter{}))
+	logger.AddHandler(handler)
 	logger.SetLevel(loggerLevel)
 
 	for i := range validCustomLevels {
@@ -188,8 +190,9 @@ func TestLoggerLogValidCustomLevel(t *testing.T) {
 }
 
 func TestLoggerStack(t *testing.T) {
-	var handler = xylog.NewHandler("", xylog.NewStreamEmitter(os.Stdout))
+	var handler = xylog.GetHandler("")
 	handler.SetFormatter(xylog.NewTextFormatter("%(levelname)s %(message)s"))
+	handler.AddEmitter(xylog.NewStreamEmitter(os.Stdout))
 	var logger = xylog.GetLogger("example.Stack")
 	logger.SetLevel(xylog.DEBUG)
 	logger.AddHandler(handler)
@@ -200,18 +203,19 @@ func TestLoggerStack(t *testing.T) {
 }
 
 func TestLoggerFilter(t *testing.T) {
-	var expectedFilter = &NameFilter{}
+	var filter = &NameFilter{}
 	var logger = xylog.GetLogger(t.Name())
-	logger.AddFilter(expectedFilter)
 	xycond.ExpectNotPanic(func() {
-		logger.RemoveFilter(expectedFilter)
+		logger.AddFilter(filter)
 	}).Test(t)
 }
 
 func TestLoggerFilterLog(t *testing.T) {
 	var expectedMessage = "foo"
+	var handler = xylog.GetHandler("")
+	handler.AddEmitter(&CapturedEmitter{})
 	var logger = xylog.GetLogger(t.Name())
-	logger.AddHandler(xylog.NewHandler("", &CapturedEmitter{}))
+	logger.AddHandler(handler)
 	logger.SetLevel(xylog.DEBUG)
 
 	capturedOutput = ""
@@ -226,8 +230,10 @@ func TestLoggerFilterLog(t *testing.T) {
 }
 
 func TestLoggerAddFields(t *testing.T) {
+	var handler = xylog.GetHandler("")
+	handler.AddEmitter(&CapturedEmitter{})
 	var logger = xylog.GetLogger(t.Name())
-	logger.AddHandler(xylog.NewHandler("", &CapturedEmitter{}))
+	logger.AddHandler(handler)
 	logger.SetLevel(xylog.DEBUG)
 	logger.AddField("buzz", "bar")
 

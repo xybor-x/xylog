@@ -17,19 +17,28 @@ Package xylog is a logging module based on the design of python logging
 The basic structs defined by the module, together with their functions, are
 listed below:
 
-1.  Loggers expose the interface that application code directly uses.
-2.  Handlers convert log records (created by loggers) to log messages, then send
-    them to the Emitter.
-3.  Emitters write log messages to appropriate destination.
-4.  Filters provide a finer grained facility for determining which log
-    records to output.
-5.  Formatters specify the layout of log records in the final output.
+1.  `Logger` is directly used by application code. It creates `LogRecord` and
+    sends to `Handlers`.
+2.  `Handler` converts `LogRecord` (created by `Logger`) to logging messages and
+    sends to `Emitters`.
+3.  `Emitter` writes logging messages (created by `Handler`) to appropriate
+    destination.
+4.  `Filter` is used by `Logger` and `Handler` to determine which `LogRecord`
+    should be logged.
+5.  `Formatter` is used by `Handler` to specify how a `LogRecord` is converted
+    to the logging message.
 
 ## Logger
 
-Loggers should NEVER be instantiated directly, but always through the
-module-level function `xylog.GetLogger(name)`. Multiple calls to `GetLogger()`
-with the same name will always return a reference to the same Logger object.
+`Logger` should NEVER be instantiated directly. Instead, it will be created
+through the function `GetLogger(name)`. Multiple calls to `GetLogger()` with the
+same name will always return the same `Logger` object.
+
+`Logger` names are dot-separated hierarchical names, such as "a", "a.b", "a.b.c"
+or similar. For "a.b.c", its parents are "a" and "a.b".
+
+When a `LogRecord` passes through a `Logger`, it will be handled by all
+`Handlers` of `Logger` itself and `Logger`'s parents.
 
 You can logs a message by using one of built-in logging methods, such as:
 
@@ -41,33 +50,26 @@ func Debug(a ...any)
 func Debugf(msg string, a ...any)
 ```
 
-To add `Handler` or `Filter` instances to the `logger`, call `AddHandler` or
-`AddFilter` methods.
-
-To adjust the level, using `SetLevel` method.
-
 ### EventLogger
 
-`EventLogger` is a logger wrapper supporting to compose logging message by
+`EventLogger` is a `Logger` wrapper supporting to compose logging message by
 key-value fields.
 
-Use `Event` method of `Logger` to create a `EventLogger`. You need to create a
+Use `Event` method of `Logger` to create a `EventLogger`. You must create a
 unique `EventLogger` each time you want to log.
 
-If you call `Logger.AddField`, every `EventLogger` created by that `Logger` will
-have the added fields without adding again.
+If you call `Logger.AddField`, every `EventLogger` created by that `Logger`
+always contains the added fields without adding again.
 
-`EventLogger` also provides JSON format for logging message (only the message
-macro). You can use this format even if you do not set formatter as a
-`JSONFormatter`.
+`EventLogger` provides structured format (default) and JSON format for logging
+message.
 
 ## Logging level
 
 The numeric values of logging levels are given in the following table. These are
 primarily of interest if you want to define your own levels, and need them to
 have specific values relative to the predefined levels. If you define a level
-with the same numeric value, it overwrites the predefined value; the predefined
-name is lost.
+with the same numeric value, it overwrites the predefined value.
 
 | Level        | Numeric value |
 | ------------ | ------------- |
@@ -80,38 +82,35 @@ name is lost.
 
 ## Handler
 
-`Handler` handles logging events. A `Handler` need to be instantiated with an
-`Emitter` instance rather than creating directly.
+`Handler` handles `LogRecord` and converts it to logging message.
 
-Any `Handler` with a not-empty name will be associated with its name. Calling
-`NewHandler` twice with the same name will cause a panic. If you want to create
-an anonymous `Handler`, call this function with an empty name.
+Like `Logger`, `Handler` can also be determined by its name. But the name is not
+hierarchical.
 
-To get an existed `Handler`, call `GetHandler` with its name. 
-
-`Handler` can use `SetFormatter` method to format the logging message.
-
-Like `Logger`, `Handler` is also able to call `AddFilter`.
+To get an `Handler`, call `GetHandler` with its name. If the `Handler` doesn't
+yet existed, create a new one. Many calls to `GetHandler` with the same name
+will always give the same `Handler`. An exception is empty name which represents
+for anonymous `Handlers`.
 
 ## Emitter
 
-`Emitter` instances write log messages to specified destination.
+`Emitter` writes log messages to specified destination.
 
-`StreamEmitter` can be used to print logging message into stdout or stderr.
+`StreamEmitter` can be used to print logging message into `stdout` or `stderr`.
 
-`FileEmitter` can be used to write logging message to files. It can rotate to
-log into another file if the file exceed the limit size or time.
+`FileEmitter` can be used to write logging message to files. Library provides a
+capability of rotating log with limited size or time.
 
 ## Formatter
 
-`Formatter` instances are used to convert a `LogRecord` to text.
+`Formatter` converts a `LogRecord` to text.
 
-`Formatter` need to know how a `LogRecord` is constructed. They are responsible
-for converting a `LogRecord` to a string which can be interpreted by either a
-human or an external system.
+Attributes of `LogRecord` are called macro. Macros' value is filled when the
+`LogRecord` is initiated. Using macros is the easy way to construct a logging
+message with dynamic and complex values.
 
-`TextFormatter` is a simple `Formatter` which uses logging macros and format
-string to format the message.
+`TextFormatter` is a simple `Formatter` which uses macros and format string to
+format the message.
 
 `JSONFormatter` allows to create a logging message of JSON format.
 
@@ -171,10 +170,11 @@ See more examples [here](./example_test.go).
 ## Simple usage
 
 ```golang
-var handler = xylog.NewHandler("xybor", xylog.StdoutEmitter)
+var handler = xylog.GetHandler("")
+handler.AddEmitter(xylog.StderrEmitter)
 handler.SetFormatter(xylog.NewTextFormmater("%(level)s %(message)s"))
 
-var logger = xylog.GetLogger("xybor.service")
+var logger = xylog.GetLogger("example.service")
 logger.AddHandler(handler)
 logger.SetLevel(xylog.DEBUG)
 
@@ -190,8 +190,11 @@ logger.Debug("foo")
 // Create a rotating emitter which rotates to another files if current file
 // size is over than 30 bytes. Backup maximum of two log files.
 var emitter = xylog.NewSizeRotatingFileEmitter("example.log", 30, 2)
-var handler = xylog.NewHandler("", emitter)
+
+var handler = xylog.GetHandler("")
+handler.AddEmitter(emitter)
 handler.SetFormatter(xylog.NewTextFormatter("%(message)s"))
+
 var logger = xylog.GetLogger("example_file_emitter")
 logger.SetLevel(xylog.DEBUG)
 logger.AddHandler(handler)
@@ -222,9 +225,12 @@ if _, err := os.Stat("example.log.2"); err == nil {
 ## Get the existed Handler
 
 ```golang
-// Get the handler of the first example.
-var handler = xylog.GetHandler("xybor")
-var logger = xylog.GetLogger("xybor.example")
+var handler = xylog.GetHandler("bar")
+handler.AddEmitter(xylog.StderrEmitter)
+handler.SetFormatter(xylog.NewTextFormatter("%(message)s"))
+
+var handler = xylog.GetHandler("bar")
+var logger = xylog.GetLogger("example")
 logger.AddHandler(handler)
 logger.Critical("foo foo")
 
@@ -239,7 +245,8 @@ var formatter = xylog.NewStructureFormatter().
     AddField("module", "name").
     AddField("level", "levelname").
     AddField("", "message")
-var handler = xylog.NewHandler("", xylog.NewStreamEmitter(os.Stdout))
+var handler = xylog.GetHandler("")
+handler.AddEmitter(xylog.StdoutEmitter)
 handler.SetFormatter(formatter)
 
 var logger = xylog.GetLogger("example.StructureFormatter")
@@ -254,7 +261,8 @@ logger.Event("create").Field("employee", "david").Debug()
 ## Event Logger
 
 ```golang
-var handler = xylog.NewHandler("", xylog.NewStreamEmitter(os.Stdout))
+var handler = xylog.GetHandler("")
+handler.AddEmitter(xylog.StdoutEmitter)
 handler.SetFormatter(xylog.NewTextFormatter(
     "module=%(name)s level=%(levelname)s %(message)s"))
 
@@ -283,13 +291,16 @@ func (f *LoggerNameFilter) Filter(r xylog.LogRecord) bool {
     return f.name == r.name
 }
 
-// Get the logger of the first example.
-var logger = xylog.GetLogger("xybor.service")
-logger.AddFilter(&LoggerNameFilter{"xybor.service.chat"})
+var handler = xylog.GetHandler("")
+handler.AddEmitter(xylog.StderrEmitter)
 
-logger.Debug("foo")
-xylog.GetLogger("xybor.service.auth").Debug("auth foo")
-xylog.GetLogger("xybor.service.chat").Debug("chat foo")
+var logger = xylog.GetLogger("example.filter")
+logger.AddHandler(handler)
+logger.SetLevel(xylog.DEBUG)
+logger.AddFilter(&LoggerNameFilter{"exampel.filter.chat"})
+
+xylog.GetLogger("example.filter.auth").Debug("auth foo")
+xylog.GetLogger("example.filter.chat").Debug("chat foo")
 
 // Output:
 // chat foo
@@ -300,7 +311,9 @@ xylog.GetLogger("xybor.service.chat").Debug("chat foo")
 ```golang
 // A simple program with only one application area could use directly the root
 // logger.
-var handler = xylog.NewHandler("", xylog.StdoutEmitter)
+var handler = xylog.GetHandler("")
+handler.AddEmitter(xylog.StdoutEmitter)
+
 xylog.SetLevel(xylog.DEBUG)
 xylog.AddHandler(handler)
 
@@ -316,7 +329,7 @@ xylog.Debug("bar")
 // If a logger is named with the prefix of "xybor.", it belongs to the xybor
 // logger.
 // This logger has the following properties:
-//  - Logger and handler level is WARNING.
+//  - Logger and handler level are WARNING.
 //  - Logging messages contain time, level name, logger name.
 //  - Output is stderr.
 var logger = xylog.GetLogger("xybor.foo")

@@ -25,7 +25,8 @@ func TestEventLogger(t *testing.T) {
 }
 
 func TestEventLoggerPair(t *testing.T) {
-	var handler = xylog.NewHandler("", &CapturedEmitter{})
+	var handler = xylog.GetHandler("")
+	handler.AddEmitter(&CapturedEmitter{})
 	handler.SetLevel(xylog.DEBUG)
 	var logger = xylog.GetLogger(t.Name())
 	logger.AddHandler(handler)
@@ -41,7 +42,8 @@ func TestEventLoggerPair(t *testing.T) {
 }
 
 func TestEventLoggerJSON(t *testing.T) {
-	var handler = xylog.NewHandler("", &CapturedEmitter{})
+	var handler = xylog.GetHandler("")
+	handler.AddEmitter(&CapturedEmitter{})
 	handler.SetLevel(xylog.DEBUG)
 	var logger = xylog.GetLogger(t.Name())
 	logger.AddHandler(handler)

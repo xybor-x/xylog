@@ -14,7 +14,7 @@ var notRegisteredHandlerNames = []string{"foobar", "barfoo"}
 
 func init() {
 	for i := range registeredHandlerNames {
-		xylog.NewHandler(registeredHandlerNames[i], xylog.StdoutEmitter)
+		xylog.GetHandler(registeredHandlerNames[i])
 	}
 }
 
@@ -43,7 +43,7 @@ func TestGetHandlerDiff(t *testing.T) {
 func TestGetHandlerNotRegisterBefore(t *testing.T) {
 	for i := range notRegisteredHandlerNames {
 		var handler = xylog.GetHandler(notRegisteredHandlerNames[i])
-		xycond.ExpectNil(handler).Test(t)
+		xycond.ExpectNotNil(handler).Test(t)
 	}
 }
 
