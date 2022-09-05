@@ -82,7 +82,7 @@ func TestJSONFormatter(t *testing.T) {
 }
 
 func TestStructureFormatter(t *testing.T) {
-	var formatter = xylog.NewStructureFormatter().
+	var formatter = xylog.NewStructuredFormatter().
 		AddField("asctime", "asctime").
 		AddField("created", "created").
 		AddField("filename", "filename").

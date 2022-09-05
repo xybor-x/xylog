@@ -12,20 +12,17 @@ import (
 )
 
 func init() {
-	lastHandler.AddEmitter(StderrEmitter)
+	lastHandler.AddEmitter(NewStreamEmitter(os.Stderr))
 
 	rootLogger = newlogger("", nil)
 	rootLogger.SetLevel(WARNING)
 	handlerManager = make(map[string]*Handler)
 
+	var formatter = NewTextFormatter(
+		"time=%(asctime)-30s level=%(levelname)-8s module=%(name)s %(message)s")
 	var handler = GetHandler("xybor")
-	handler.AddEmitter(StderrEmitter)
-	handler.SetFormatter(NewTextFormatter(
-		"time=%(asctime)-30s " +
-			"level=%(levelname)-8s " +
-			"module=%(name)s" +
-			"%(message)s",
-	))
+	handler.AddEmitter(NewStreamEmitter(os.Stderr))
+	handler.SetFormatter(formatter)
 
 	var logger = GetLogger("xybor")
 	logger.SetLevel(WARNING)
@@ -47,12 +44,6 @@ const (
 	DEBUG    = 10
 	NOTSET   = 0
 )
-
-// StdoutEmitter is a shortcut of NewStreamEmitter(os.Stdout)
-var StdoutEmitter = NewStreamEmitter(os.Stdout)
-
-// StderrEmitter is a shortcut of NewStreamEmitter(os.Stderr)
-var StderrEmitter = NewStreamEmitter(os.Stderr)
 
 // startTime is used as the base when calculating the relative time of events.
 var startTime = time.Now().UnixMilli()

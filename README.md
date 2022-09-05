@@ -98,16 +98,16 @@ for anonymous `Handlers`.
 
 `StreamEmitter` can be used to print logging message into `stdout` or `stderr`.
 
-`FileEmitter` can be used to write logging message to files. Library provides a
-capability of rotating log with limited size or time.
+`FileEmitter` can be used to write logging message to files. This package
+provides a capability of rotating log with limited size or time.
 
 ## Formatter
 
 `Formatter` converts a `LogRecord` to text.
 
-Attributes of `LogRecord` are called macro. Macros' value is filled when the
-`LogRecord` is initiated. Using macros is the easy way to construct a logging
-message with dynamic and complex values.
+Attributes of `LogRecord` are called macros. Macros' value is filled when the
+`LogRecord` is created by the `Logger`. Using macros is the easy way to
+construct a logging message with dynamic and complex values.
 
 `TextFormatter` is a simple `Formatter` which uses macros and format string to
 format the message.
@@ -167,14 +167,16 @@ CPU: Intel(R) Xeon(R) Platinum 8272CL CPU @ 2.60GHz
 
 See more examples [here](./example_test.go).
 
-## Simple usage
+## Simple
 
 ```golang
+var emitter = xylog.NewStreamEmitter(os.Stdout)
+var formatter = xylog.NewTextFormmater("%(level)s %(message)s")
 var handler = xylog.GetHandler("")
-handler.AddEmitter(xylog.StderrEmitter)
-handler.SetFormatter(xylog.NewTextFormmater("%(level)s %(message)s"))
+handler.AddEmitter(emitter)
+handler.SetFormatter(formatter)
 
-var logger = xylog.GetLogger("example.service")
+var logger = xylog.GetLogger("example.simple")
 logger.AddHandler(handler)
 logger.SetLevel(xylog.DEBUG)
 
@@ -184,157 +186,47 @@ logger.Debug("foo")
 // DEBUG foo
 ```
 
-## Rotating File Emitter
-
+## Advanced
 ```golang
-// Create a rotating emitter which rotates to another files if current file
-// size is over than 30 bytes. Backup maximum of two log files.
-var emitter = xylog.NewSizeRotatingFileEmitter("example.log", 30, 2)
-
-var handler = xylog.GetHandler("")
-handler.AddEmitter(emitter)
-handler.SetFormatter(xylog.NewTextFormatter("%(message)s"))
-
-var logger = xylog.GetLogger("example_file_emitter")
-logger.SetLevel(xylog.DEBUG)
-logger.AddHandler(handler)
-
-for i := 0; i < 20; i++ {
-    // logger will write 80 bytes (including newlines).
-    logger.Debug("foo")
-}
-
-if _, err := os.Stat("example.log"); err == nil {
-    fmt.Println("Created example.log")
-}
-
-if _, err := os.Stat("example.log.1"); err == nil {
-    fmt.Println("Created example.log.1")
-}
-
-if _, err := os.Stat("example.log.2"); err == nil {
-    fmt.Println("Created example.log.2")
-}
-
-// Output:
-// Created example.log
-// Created example.log.1
-// Created example.log.2
-```
-
-## Get the existed Handler
-
-```golang
-var handler = xylog.GetHandler("bar")
-handler.AddEmitter(xylog.StderrEmitter)
-handler.SetFormatter(xylog.NewTextFormatter("%(message)s"))
-
-var handler = xylog.GetHandler("bar")
-var logger = xylog.GetLogger("example")
-logger.AddHandler(handler)
-logger.Critical("foo foo")
-
-// Output:
-// CRITICAL foo foo
-```
-
-## Formatters
-
-```golang
-var formatter = xylog.NewStructureFormatter().
-    AddField("module", "name").
+// setup.go
+var emitter = xylog.NewFileEmitter("example.log")
+var formatter = xylog.NewStructuredFormatter().
+    AddField("time", "asctime").
     AddField("level", "levelname").
+    AddField("module", "name").
     AddField("", "message")
-var handler = xylog.GetHandler("")
-handler.AddEmitter(xylog.StdoutEmitter)
+
+var handler = xylog.GetHandler("advanced")
+handler.AddEmitter(emitter)
 handler.SetFormatter(formatter)
+handler.SetLevel(xylog.DEBUG)
 
-var logger = xylog.GetLogger("example.StructureFormatter")
+var logger = xylog.GetLogger("example.advanced")
 logger.AddHandler(handler)
-logger.SetLevel(xylog.DEBUG)
-logger.Event("create").Field("employee", "david").Debug()
-
-// Output:
-// module=example.StructureFormatter level=DEBUG event=create employee=david
+logger.SetLevel(xylog.WARNING)
 ```
 
-## Event Logger
-
 ```golang
-var handler = xylog.GetHandler("")
-handler.AddEmitter(xylog.StdoutEmitter)
-handler.SetFormatter(xylog.NewTextFormatter(
-    "module=%(name)s level=%(levelname)s %(message)s"))
+// user.go
+var userLogger = xylog.GetLogger("example.advanced.user")
+userLogger.SetLevel(xylog.DEBUG)
+userLogger.AddField("host", "localhost:3333")
 
-var logger = xylog.GetLogger("example")
-logger.AddHandler(handler)
-logger.SetLevel(xylog.DEBUG)
-logger.AddField("boss", "foo")
+logger.Event("create-user").Field("user_id", 5).Field("name", "bar").Debug()
+logger.Event("delete-user").Field("user_id", 5).JSON().Warning()
 
-logger.Event("create").Field("product", 1235).Debug()
-logger.Event("use").Field("product", "bar").JSON().Debug()
-
-// Output:
-// module=example level=DEBUG boss=foo event=create product=1235
-// module=example level=DEBUG {"boss":"foo","event":"use","product":"bar"}
+// example.log:
+// time=[time] level=DEBUG module=example.advanced.user host=localhost:3333 event=create-user user_id=5 name=bar
+// time=[time] level=DEBUG module=example.advanced.user {"event":"delete-user","host":"localhost:3333","user_id":5}
 ```
 
-## Filter definition
-
 ```golang
-// LoggerNameFilter only logs out records belongs to a specified logger.
-type LoggerNameFilter struct {
-    name string
-}
+// record.go
+var recordLogger = xylog.GetLogger("example.advanced.record")
 
-func (f *LoggerNameFilter) Filter(r xylog.LogRecord) bool {
-    return f.name == r.name
-}
+recordLogger.Event("add-record").Debug()
+recordLogger.Event("add-record-failed").Error()
 
-var handler = xylog.GetHandler("")
-handler.AddEmitter(xylog.StderrEmitter)
-
-var logger = xylog.GetLogger("example.filter")
-logger.AddHandler(handler)
-logger.SetLevel(xylog.DEBUG)
-logger.AddFilter(&LoggerNameFilter{"exampel.filter.chat"})
-
-xylog.GetLogger("example.filter.auth").Debug("auth foo")
-xylog.GetLogger("example.filter.chat").Debug("chat foo")
-
-// Output:
-// chat foo
-```
-
-## Root logger
-
-```golang
-// A simple program with only one application area could use directly the root
-// logger.
-var handler = xylog.GetHandler("")
-handler.AddEmitter(xylog.StdoutEmitter)
-
-xylog.SetLevel(xylog.DEBUG)
-xylog.AddHandler(handler)
-
-xylog.Debug("bar")
-
-// Output:
-// bar
-```
-
-## Standard xybor logger
-
-```golang
-// If a logger is named with the prefix of "xybor.", it belongs to the xybor
-// logger.
-// This logger has the following properties:
-//  - Logger and handler level are WARNING.
-//  - Logging messages contain time, level name, logger name.
-//  - Output is stderr.
-var logger = xylog.GetLogger("xybor.foo")
-logger.Debug("start")
-
-// Output:
-// time=[time] level=DEBUG module=xybor.foo message=start
+// example.log:
+// time=[time] level=ERROR module=example.advanced.record event=add-record-failed
 ```

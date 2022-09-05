@@ -35,9 +35,9 @@ type Logger struct {
 	persistentFields []field
 }
 
-// GetLogger gets a logger with the specified name (channel name), creating it
-// if it doesn't yet exist. This name is a dot-separated hierarchical name, such
-// as "a", "a.b", "a.b.c" or similar.
+// GetLogger gets a logger with the specified name, creating it if it doesn't
+// yet exist. This name is a dot-separated hierarchical name, such as "a",
+// "a.b", "a.b.c", or similar.
 //
 // Leave name as empty string to get the root logger.
 func GetLogger(name string) *Logger {
@@ -60,8 +60,7 @@ func GetLogger(name string) *Logger {
 	}).(*Logger)
 }
 
-// SetLevel sets the new logging level. It also clears logging level cache of
-// all loggers in program.
+// SetLevel sets the new logging level.
 func (lg *Logger) SetLevel(level int) {
 	lg.lock.WLockFunc(func() { lg.level = checkLevel(level) })
 	rootLogger.clearCache()
