@@ -1,3 +1,7 @@
+# Developing
+
+-   Handler now has many Emitters (instead only one).
+
 # v0.1.0 (Sep 04, 2022)
 
 -   Add JSONFormatter and StructureFormatter.

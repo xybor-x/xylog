@@ -28,34 +28,36 @@ type Logger struct {
 	children         map[string]*Logger
 	parent           *Logger
 	level            int
-	handlers         map[*Handler]any
+	handlers         []*Handler
 	lock             xylock.RWLock
 	cache            map[int]bool
 	extra            map[string]any
 	persistentFields []field
 }
 
-// newlogger creates a new logger with a name and parent. The fullname of logger
-// will be concatenated by the parent's fullname. This logger will not be
-// automatically added to logger hierarchy. The returned logger has no child,
-// no handler, and NOTSET level.
-func newlogger(name string, parent *Logger) *Logger {
-	var c = parent
-	if c != nil && c != rootLogger {
-		name = c.fullname + "." + name
+// GetLogger gets a logger with the specified name (channel name), creating it
+// if it doesn't yet exist. This name is a dot-separated hierarchical name, such
+// as "a", "a.b", "a.b.c" or similar.
+//
+// Leave name as empty string to get the root logger.
+func GetLogger(name string) *Logger {
+	if name == "" {
+		return rootLogger
 	}
-
-	return &Logger{
-		f:        newfilterer(),
-		fullname: name,
-		children: make(map[string]*Logger),
-		parent:   parent,
-		level:    NOTSET,
-		handlers: make(map[*Handler]any),
-		lock:     xylock.RWLock{},
-		cache:    make(map[int]bool),
-		extra:    make(map[string]any),
-	}
+	return lock.RWLockFunc(func() any {
+		var lg = rootLogger
+		for _, part := range strings.Split(name, ".") {
+			if _, ok := lg.children[part]; !ok {
+				if lg == rootLogger {
+					lg.children[part] = newlogger(part, nil)
+				} else {
+					lg.children[part] = newlogger(part, lg)
+				}
+			}
+			lg = lg.children[part]
+		}
+		return lg
+	}).(*Logger)
 }
 
 // SetLevel sets the new logging level. It also clears logging level cache of
@@ -69,27 +71,13 @@ func (lg *Logger) SetLevel(level int) {
 func (lg *Logger) AddHandler(h *Handler) {
 	xycond.AssertNotNil(h)
 	lg.lock.WLockFunc(func() {
-		if _, ok := lg.handlers[h]; !ok {
-			lg.handlers[h] = nil
-		}
-	})
-}
-
-// RemoveHandler removes an existed handler.
-func (lg *Logger) RemoveHandler(h *Handler) {
-	lg.lock.WLockFunc(func() {
-		delete(lg.handlers, h)
+		lg.handlers = append(lg.handlers, h)
 	})
 }
 
 // AddFilter adds a specified filter.
 func (lg *Logger) AddFilter(f Filter) {
 	lg.f.AddFilter(f)
-}
-
-// RemoveFilter removes an existed filter.
-func (lg *Logger) RemoveFilter(f Filter) {
-	lg.f.RemoveFilter(f)
 }
 
 // AddExtra adds a custom macro to logging format.
@@ -275,8 +263,8 @@ func (lg *Logger) callHandlers(record LogRecord) {
 	var c = lg
 	var found = 0
 	for c != nil {
-		for h := range c.handlers {
-			h.handle(record)
+		for i := range c.handlers {
+			c.handlers[i].handle(record)
 			found++
 		}
 		c = c.parent
@@ -326,10 +314,25 @@ func (lg *Logger) clearCache() {
 	}
 }
 
-// prefixMessage adds a prefix to origin message if the prefix is not empty.
-func prefixMessage(prefix, msg string) string {
-	if prefix != "" {
-		msg = fmt.Sprintf("%s %s", prefix, msg)
+// newlogger creates a new logger with a name and parent. The fullname of logger
+// will be concatenated by the parent's fullname. This logger will not be
+// automatically added to logger hierarchy. The returned logger has no child,
+// no handler, and NOTSET level.
+func newlogger(name string, parent *Logger) *Logger {
+	var c = parent
+	if c != nil && c != rootLogger {
+		name = c.fullname + "." + name
 	}
-	return msg
+
+	return &Logger{
+		f:        newfilterer(),
+		fullname: name,
+		children: make(map[string]*Logger),
+		parent:   parent,
+		level:    NOTSET,
+		handlers: nil,
+		lock:     xylock.RWLock{},
+		cache:    make(map[int]bool),
+		extra:    make(map[string]any),
+	}
 }

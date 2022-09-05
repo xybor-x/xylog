@@ -11,13 +11,13 @@ type Filter interface {
 
 // A base class for loggers and handlers which allows them to share common code.
 type filterer struct {
-	filters map[Filter]any
+	filters []Filter
 	lock    xylock.RWLock
 }
 
 func newfilterer() *filterer {
 	return &filterer{
-		filters: make(map[Filter]any),
+		filters: nil,
 		lock:    xylock.RWLock{},
 	}
 }
@@ -25,16 +25,7 @@ func newfilterer() *filterer {
 // AddFilter adds a specified filter.
 func (ftr *filterer) AddFilter(f Filter) {
 	ftr.lock.WLockFunc(func() {
-		if _, ok := ftr.filters[f]; !ok {
-			ftr.filters[f] = nil
-		}
-	})
-}
-
-// RemoveFilter removes an existed filter.
-func (ftr *filterer) RemoveFilter(f Filter) {
-	ftr.lock.WLockFunc(func() {
-		delete(ftr.filters, f)
+		ftr.filters = append(ftr.filters, f)
 	})
 }
 
@@ -47,8 +38,8 @@ func (ftr *filterer) filter(record LogRecord) bool {
 	}
 
 	return ftr.lock.RLockFunc(func() any {
-		for f := range ftr.filters {
-			if !f.Filter(record) {
+		for i := range ftr.filters {
+			if !ftr.filters[i].Filter(record) {
 				return false
 			}
 		}

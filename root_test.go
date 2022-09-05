@@ -8,10 +8,10 @@ import (
 )
 
 func testRootLogger(t *testing.T, f func(int)) {
-	var handler = xylog.NewHandler("", &CapturedEmitter{})
+	var handler = xylog.GetHandler("")
+	handler.AddEmitter(&CapturedEmitter{})
 	handler.SetLevel(xylog.DEBUG)
 	xylog.AddHandler(handler)
-	defer xylog.RemoveHandler(handler)
 
 	var loggerLevel = xylog.INFO
 	xylog.SetLevel(loggerLevel)
@@ -21,10 +21,9 @@ func testRootLogger(t *testing.T, f func(int)) {
 }
 
 func TestRootHandler(t *testing.T) {
-	var handler = xylog.NewHandler("", xylog.StdoutEmitter)
+	var handler = xylog.GetHandler("")
 	xycond.ExpectNotPanic(func() {
 		xylog.AddHandler(handler)
-		xylog.RemoveHandler(handler)
 	}).Test(t)
 }
 
@@ -32,7 +31,6 @@ func TestRootFilter(t *testing.T) {
 	var filter = &NameFilter{}
 	xycond.ExpectNotPanic(func() {
 		xylog.AddFilter(filter)
-		xylog.RemoveFilter(filter)
 	}).Test(t)
 }
 
@@ -53,28 +51,6 @@ func TestRootSetLevel(t *testing.T) {
 			xylog.SetLevel(levels[i])
 		}).Test(t)
 	}
-}
-
-func TestRootLog(t *testing.T) {
-	var levels = []int{
-		xylog.NOTSET,
-		xylog.DEBUG,
-		xylog.INFO,
-		xylog.WARN,
-		xylog.WARNING,
-		xylog.ERROR,
-		xylog.FATAL,
-		xylog.CRITICAL,
-	}
-
-	testRootLogger(t, func(loggerLevel int) {
-		for i := range levels {
-			checkLogOutput(t, func() { xylog.Logf(levels[i], "foo") }, "foo",
-				levels[i], loggerLevel)
-			checkLogOutput(t, func() { xylog.Log(levels[i], "foo") }, "foo",
-				levels[i], loggerLevel)
-		}
-	})
 }
 
 func TestRootLogfMethods(t *testing.T) {

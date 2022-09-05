@@ -5,19 +5,9 @@ func AddHandler(h *Handler) {
 	rootLogger.AddHandler(h)
 }
 
-// RemoveHandler removes an existed handler from the root logger.
-func RemoveHandler(h *Handler) {
-	rootLogger.RemoveHandler(h)
-}
-
 // AddFilter adds a specified filter to the root logger.
 func AddFilter(f Filter) {
 	rootLogger.AddFilter(f)
-}
-
-// RemoveFilter removes an existed filter from the root logger.
-func RemoveFilter(f Filter) {
-	rootLogger.RemoveFilter(f)
 }
 
 // SetLevel sets the new logging level for the root logger.

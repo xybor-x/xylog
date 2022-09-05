@@ -3,7 +3,6 @@ package xylog
 import (
 	"fmt"
 
-	"github.com/xybor-x/xycond"
 	"github.com/xybor-x/xylock"
 )
 
@@ -12,35 +11,35 @@ import (
 // Any Handler with a not-empty name will be associated with its name.
 type Handler struct {
 	f *filterer
-	e Emitter
 
+	emitters  []Emitter
 	level     int
 	lock      xylock.RWLock
 	formatter Formatter
 }
 
-// NewHandler creates a Handler with a specified Emitter.
+// GetHandler gets a handler with the specified name, creating it if it doesn't
+// yet exist.
 //
-// Any Handler with a non-empty name will be associated with its name. Calling
-// NewHandler twice with the same name will cause a panic. If you want to create
-// an anonymous Handler, call this function with an empty name.
-func NewHandler(name string, e Emitter) *Handler {
-	var handler = GetHandler(name)
-	xycond.AssertNil(handler)
+// Leave the name as empty if you want to create an anonymous Handler.
+func GetHandler(name string) *Handler {
+	var h, ok = handlerManager[name]
+	if ok {
+		return h
+	}
 
-	handler = &Handler{
+	h = &Handler{
 		f:         newfilterer(),
-		e:         e,
+		emitters:  nil,
 		level:     NOTSET,
 		lock:      xylock.RWLock{},
 		formatter: defaultFormatter,
 	}
-
 	if name != "" {
-		mapHandler(name, handler)
+		mapHandler(name, h)
 	}
 
-	return handler
+	return h
 }
 
 // SetLevel sets the new logging level of handler. It is NOTSET by default.
@@ -58,9 +57,9 @@ func (h *Handler) AddFilter(f Filter) {
 	h.f.AddFilter(f)
 }
 
-// RemoveFilter removes an existed filter.
-func (h *Handler) RemoveFilter(f Filter) {
-	h.f.RemoveFilter(f)
+// AddEmitter adds a specified emitter.
+func (h *Handler) AddEmitter(e Emitter) {
+	h.emitters = append(h.emitters, e)
 }
 
 // filter checks all filters in filterer, if there is any failed filter, it will
@@ -79,6 +78,10 @@ func (h *Handler) handle(record LogRecord) {
 			msg = fmt.Sprint("An error occurred while formatting the message:",
 				err)
 		}
-		h.lock.WLockFunc(func() { h.e.Emit(msg) })
+		h.lock.WLockFunc(func() {
+			for i := range h.emitters {
+				h.emitters[i].Emit(msg)
+			}
+		})
 	}
 }

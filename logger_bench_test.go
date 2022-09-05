@@ -33,7 +33,8 @@ func BenchmarkEventLoggerWithoutLog(b *testing.B) {
 }
 
 func BenchmarkLoggerWithOneHandler(b *testing.B) {
-	var handler = xylog.NewHandler("", &CapturedEmitter{})
+	var handler = xylog.GetHandler("")
+	handler.AddEmitter(&CapturedEmitter{})
 	handler.SetLevel(xylog.DEBUG)
 	var logger = xylog.GetLogger(b.Name())
 	logger.SetLevel(xylog.DEBUG)
@@ -47,7 +48,8 @@ func BenchmarkLoggerWithMultiHandler(b *testing.B) {
 	var logger = xylog.GetLogger(b.Name())
 	logger.SetLevel(xylog.DEBUG)
 	for i := 0; i < 100; i++ {
-		var handler = xylog.NewHandler("", &CapturedEmitter{})
+		var handler = xylog.GetHandler("")
+		handler.AddEmitter(&CapturedEmitter{})
 		handler.SetLevel(xylog.DEBUG)
 		logger.AddHandler(handler)
 	}
@@ -57,7 +59,8 @@ func BenchmarkLoggerWithMultiHandler(b *testing.B) {
 }
 
 func benchEmitter(b *testing.B, logger *xylog.Logger, emitter xylog.Emitter) {
-	var handler = xylog.NewHandler("", emitter)
+	var handler = xylog.GetHandler("")
+	handler.AddEmitter(emitter)
 	handler.SetLevel(xylog.DEBUG)
 	logger.AddHandler(handler)
 	logger.SetLevel(xylog.DEBUG)

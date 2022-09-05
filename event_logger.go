@@ -5,11 +5,6 @@ import (
 	"strings"
 )
 
-type field struct {
-	key   string
-	value any
-}
-
 // EventLogger is a logger wrapper supporting to compose logging message with
 // key-value structure.
 type EventLogger struct {

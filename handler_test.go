@@ -7,14 +7,14 @@ import (
 	"github.com/xybor-x/xylog"
 )
 
-func TestNewHandlerWithEmptyName(t *testing.T) {
-	var handlerA = xylog.NewHandler("", xylog.StdoutEmitter)
-	var handlerB = xylog.NewHandler("", xylog.StdoutEmitter)
+func TestGetHandlerWithEmptyName(t *testing.T) {
+	var handlerA = xylog.GetHandler("")
+	var handlerB = xylog.GetHandler("")
 	xycond.ExpectNotEqual(handlerA, handlerB).Test(t)
 }
 
 func TestHandlerSetFormatter(t *testing.T) {
-	var handler = xylog.NewHandler(t.Name(), xylog.StdoutEmitter)
+	var handler = xylog.GetHandler("")
 	xycond.ExpectNotPanic(func() {
 		handler.SetFormatter(xylog.NewTextFormatter(""))
 	}).Test(t)
@@ -22,40 +22,39 @@ func TestHandlerSetFormatter(t *testing.T) {
 
 func TestHandlerFilter(t *testing.T) {
 	var expectedFilter = &NameFilter{}
-	var handler = xylog.NewHandler(t.Name(), xylog.StdoutEmitter)
-	handler.AddFilter(expectedFilter)
+	var handler = xylog.GetHandler("")
 	xycond.ExpectNotPanic(func() {
-		handler.RemoveFilter(expectedFilter)
+		handler.AddFilter(expectedFilter)
 	}).Test(t)
 }
 
 func TestHandlerFilterLog(t *testing.T) {
 	var expectedMessage = "foo foo"
 	var tests = []struct {
-		handlerName string
-		filterName  string
+		name       string
+		filterName string
 	}{
-		{t.Name() + "1", t.Name()},
+		{t.Name() + "1", t.Name() + "1"},
 		{t.Name() + "2", "foobar"},
 	}
 
 	for i := range tests {
-		var handler = xylog.NewHandler(tests[i].handlerName, &CapturedEmitter{})
+		var handler = xylog.GetHandler("")
+		handler.AddEmitter(&CapturedEmitter{})
 		handler.AddFilter(&NameFilter{tests[i].filterName})
 		handler.SetLevel(xylog.DEBUG)
 
-		var logger = xylog.GetLogger(t.Name())
+		var logger = xylog.GetLogger(tests[i].name)
 		logger.SetLevel(xylog.DEBUG)
 		logger.AddHandler(handler)
 
 		capturedOutput = ""
 		logger.Warningf(expectedMessage)
-		if tests[i].filterName != t.Name() {
+		if tests[i].filterName != tests[i].name {
 			xycond.ExpectEmpty(capturedOutput).Test(t)
 		} else {
 			xycond.ExpectEqual(capturedOutput, expectedMessage).Test(t)
 		}
-		logger.RemoveHandler(handler)
 	}
 }
 
@@ -63,18 +62,19 @@ func TestHandlerLevel(t *testing.T) {
 	var expectedMessage = "foo foo"
 	var loggerLevel = xylog.INFO
 	var tests = []struct {
-		handlerName string
-		level       int
+		name  string
+		level int
 	}{
 		{t.Name() + "1", xylog.DEBUG},
 		{t.Name() + "2", xylog.ERROR},
 	}
 
 	for i := range tests {
-		var handler = xylog.NewHandler(tests[i].handlerName, &CapturedEmitter{})
+		var handler = xylog.GetHandler(tests[i].name)
+		handler.AddEmitter(&CapturedEmitter{})
 		handler.SetLevel(tests[i].level)
 
-		var logger = xylog.GetLogger(t.Name())
+		var logger = xylog.GetLogger(tests[i].name)
 		logger.SetLevel(xylog.DEBUG)
 		logger.AddHandler(handler)
 		capturedOutput = ""
@@ -84,6 +84,5 @@ func TestHandlerLevel(t *testing.T) {
 		} else {
 			xycond.ExpectEqual(capturedOutput, expectedMessage).Test(t)
 		}
-		logger.RemoveHandler(handler)
 	}
 }
