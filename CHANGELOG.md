@@ -1,6 +1,7 @@
 # Developing
 
 -   Handler now has many Emitters (instead only one).
+-   Remove root logger methods.
 
 # v0.1.0 (Sep 04, 2022)
 

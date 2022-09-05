@@ -131,26 +131,28 @@ func (js JSONFormatter) Format(record LogRecord) (string, error) {
 	return string(s), nil
 }
 
-// StructureFormatter formats the logging message with the form of key=value.
-type StructureFormatter struct {
+// StructuredFormatter formats the logging message with the form of key=value.
+type StructuredFormatter struct {
 	fields []field
 }
 
-// NewStructureFormatter creates an empty StructureFormatter.
-func NewStructureFormatter() *StructureFormatter {
-	return &StructureFormatter{}
+// NewStructuredFormatter creates an empty StructureFormatter.
+func NewStructuredFormatter() *StructuredFormatter {
+	return &StructuredFormatter{}
 }
 
 // AddField adds the macro to logging message under a name. It returns itself.
 // If you leave the name as empty, it will adds the macro value without the name
 // and equal character.
-func (sf *StructureFormatter) AddField(name, macro string) *StructureFormatter {
+func (sf *StructuredFormatter) AddField(
+	name, macro string,
+) *StructuredFormatter {
 	sf.fields = append(sf.fields, field{key: name, value: macro})
 	return sf
 }
 
 // Format creates the logging message with the form of key=value.
-func (sf StructureFormatter) Format(record LogRecord) (string, error) {
+func (sf StructuredFormatter) Format(record LogRecord) (string, error) {
 	var msg string
 	for _, f := range sf.fields {
 		var attr, err = record.getAttributeByName(f.value.(string))
