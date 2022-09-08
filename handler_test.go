@@ -1,11 +1,26 @@
 package xylog_test
 
 import (
+	"os"
 	"testing"
 
 	"github.com/xybor-x/xycond"
 	"github.com/xybor-x/xylog"
 )
+
+func TestGetHandler(t *testing.T) {
+	var handlerA = xylog.GetHandler(t.Name())
+	var handlerB = xylog.GetHandler(t.Name())
+	xycond.ExpectEqual(handlerA, handlerB).Test(t)
+	xycond.ExpectEqual(handlerA.Name(), t.Name()).Test(t)
+	xycond.ExpectEqual(handlerB.Name(), t.Name()).Test(t)
+}
+
+func TestGetHandlerDiff(t *testing.T) {
+	var handlerA = xylog.GetHandler(t.Name() + "1")
+	var handlerB = xylog.GetHandler(t.Name() + "2")
+	xycond.ExpectNotEqual(handlerA, handlerB).Test(t)
+}
 
 func TestGetHandlerWithEmptyName(t *testing.T) {
 	var handlerA = xylog.GetHandler("")
@@ -20,69 +35,30 @@ func TestHandlerSetFormatter(t *testing.T) {
 	}).Test(t)
 }
 
-func TestHandlerFilter(t *testing.T) {
-	var expectedFilter = &NameFilter{}
+func TestHandlerSetLevel(t *testing.T) {
 	var handler = xylog.GetHandler("")
-	xycond.ExpectNotPanic(func() {
-		handler.AddFilter(expectedFilter)
-	}).Test(t)
+	handler.SetLevel(xylog.WARN)
+	xycond.ExpectEqual(handler.Level(), xylog.WARN).Test(t)
 }
 
-func TestHandlerFilterLog(t *testing.T) {
-	var expectedMessage = "foo foo"
-	var tests = []struct {
-		name       string
-		filterName string
-	}{
-		{t.Name() + "1", t.Name() + "1"},
-		{t.Name() + "2", "foobar"},
-	}
+func TestHandlerFileters(t *testing.T) {
+	var filter = &LoggerNameFilter{"foo"}
+	var handler = xylog.GetHandler("")
+	handler.AddFilter(filter)
+	xycond.ExpectEqual(len(handler.Filters()), 1).Test(t)
+	xycond.ExpectEqual(handler.Filters()[0], filter).Test(t)
 
-	for i := range tests {
-		var handler = xylog.GetHandler("")
-		handler.AddEmitter(&CapturedEmitter{})
-		handler.AddFilter(&NameFilter{tests[i].filterName})
-		handler.SetLevel(xylog.DEBUG)
-
-		var logger = xylog.GetLogger(tests[i].name)
-		logger.SetLevel(xylog.DEBUG)
-		logger.AddHandler(handler)
-
-		capturedOutput = ""
-		logger.Warningf(expectedMessage)
-		if tests[i].filterName != tests[i].name {
-			xycond.ExpectEmpty(capturedOutput).Test(t)
-		} else {
-			xycond.ExpectEqual(capturedOutput, expectedMessage).Test(t)
-		}
-	}
+	handler.RemoveFilter(filter)
+	xycond.ExpectEqual(len(handler.Filters()), 0).Test(t)
 }
 
-func TestHandlerLevel(t *testing.T) {
-	var expectedMessage = "foo foo"
-	var loggerLevel = xylog.INFO
-	var tests = []struct {
-		name  string
-		level int
-	}{
-		{t.Name() + "1", xylog.DEBUG},
-		{t.Name() + "2", xylog.ERROR},
-	}
+func TestHandlerEmitters(t *testing.T) {
+	var emitter = xylog.NewStreamEmitter(os.Stdout)
+	var handler = xylog.GetHandler("")
+	handler.AddEmitter(emitter)
+	xycond.ExpectEqual(len(handler.Emitters()), 1).Test(t)
+	xycond.ExpectEqual(handler.Emitters()[0], emitter).Test(t)
 
-	for i := range tests {
-		var handler = xylog.GetHandler(tests[i].name)
-		handler.AddEmitter(&CapturedEmitter{})
-		handler.SetLevel(tests[i].level)
-
-		var logger = xylog.GetLogger(tests[i].name)
-		logger.SetLevel(xylog.DEBUG)
-		logger.AddHandler(handler)
-		capturedOutput = ""
-		logger.Logf(loggerLevel, expectedMessage)
-		if loggerLevel < tests[i].level {
-			xycond.ExpectEmpty(capturedOutput).Test(t)
-		} else {
-			xycond.ExpectEqual(capturedOutput, expectedMessage).Test(t)
-		}
-	}
+	handler.RemoveEmitter(emitter)
+	xycond.ExpectEqual(len(handler.Emitters()), 0).Test(t)
 }

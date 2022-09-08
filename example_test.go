@@ -3,7 +3,6 @@ package xylog_test
 import (
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/xybor-x/xylog"
 )
@@ -14,6 +13,7 @@ func ExampleLogger() {
 	handler.AddEmitter(emitter)
 
 	var logger = xylog.GetLogger("example.Logger")
+	defer logger.Flush()
 	logger.AddHandler(handler)
 	logger.SetLevel(xylog.DEBUG)
 	logger.Debugf("foo %s", "bar")
@@ -54,6 +54,7 @@ func ExampleEventLogger() {
 	handler.AddEmitter(emitter)
 
 	var logger = xylog.GetLogger("example.EventLogger")
+	defer logger.Flush()
 	logger.AddHandler(handler)
 	logger.SetLevel(xylog.DEBUG)
 	logger.AddField("boss", "foo")
@@ -62,7 +63,7 @@ func ExampleEventLogger() {
 	logger.Event("use").Field("product", "bar").JSON().Debug()
 
 	// Output:
-	// boss=foo event=create product=1235
+	// event=create boss=foo product=1235
 	// {"boss":"foo","event":"use","product":"bar"}
 }
 
@@ -76,6 +77,7 @@ func ExampleTextFormatter() {
 	handler.SetFormatter(formatter)
 
 	var logger = xylog.GetLogger("example.Formatter")
+	defer logger.Flush()
 	logger.AddExtra("custom", "something")
 	logger.AddHandler(handler)
 	logger.SetLevel(xylog.DEBUG)
@@ -96,6 +98,7 @@ func ExampleJSONFormatter() {
 	handler.SetFormatter(formatter)
 
 	var logger = xylog.GetLogger("example.JSONFormatter")
+	defer logger.Flush()
 	logger.AddHandler(handler)
 	logger.SetLevel(xylog.DEBUG)
 	logger.Event("create").Field("product", 1235).JSON().Debug()
@@ -115,21 +118,13 @@ func ExampleStructuredFormatter() {
 	handler.SetFormatter(formatter)
 
 	var logger = xylog.GetLogger("example.StructuredFormatter")
+	defer logger.Flush()
 	logger.AddHandler(handler)
 	logger.SetLevel(xylog.DEBUG)
 	logger.Event("create").Field("employee", "david").Debug()
 
 	// Output:
 	// module=example.StructuredFormatter level=DEBUG event=create employee=david
-}
-
-// LoggerNameFilter only logs out records belongs to a specified logger.
-type LoggerNameFilter struct {
-	name string
-}
-
-func (f *LoggerNameFilter) Filter(r xylog.LogRecord) bool {
-	return f.name == r.Name
 }
 
 func ExampleFilter() {
@@ -139,6 +134,7 @@ func ExampleFilter() {
 	handler.AddFilter(&LoggerNameFilter{"example.filter.chat"})
 
 	var logger = xylog.GetLogger("example.filter")
+	defer logger.Flush()
 	logger.AddHandler(handler)
 	logger.SetLevel(xylog.DEBUG)
 
@@ -147,73 +143,4 @@ func ExampleFilter() {
 
 	// Output:
 	// chat foo
-}
-
-func ExampleNewSizeRotatingFileEmitter() {
-	// Create a rotating emitter which rotates to another files if current file
-	// size is over than 30 bytes. Backup maximum of two log files.
-	var emitter = xylog.NewSizeRotatingFileEmitter("exampleSize.log", 30, 2)
-	var handler = xylog.GetHandler("")
-	handler.AddEmitter(emitter)
-
-	var logger = xylog.GetLogger("example.SizeRotatingFileEmitter")
-	logger.SetLevel(xylog.DEBUG)
-	logger.AddHandler(handler)
-
-	for i := 0; i < 20; i++ {
-		// logger will write 80 bytes (including newlines).
-		logger.Debug("foo")
-	}
-
-	if _, err := os.Stat("exampleSize.log"); err == nil {
-		fmt.Println("Created exampleSize.log")
-	}
-
-	if _, err := os.Stat("exampleSize.log.1"); err == nil {
-		fmt.Println("Created exampleSize.log.1")
-	}
-
-	if _, err := os.Stat("exampleSize.log.2"); err == nil {
-		fmt.Println("Created exampleSize.log.2")
-	}
-
-	// Output:
-	// Created exampleSize.log
-	// Created exampleSize.log.1
-	// Created exampleSize.log.2
-}
-
-func ExampleNewTimeRotatingFileEmitter() {
-	// Create a rotating emitter which rotates to another files if logger spent
-	// one second to log.
-	var emitter = xylog.NewTimeRotatingFileEmitter(
-		"exampleTime.log", time.Second, 2)
-	var handler = xylog.GetHandler("")
-	handler.AddEmitter(emitter)
-	var logger = xylog.GetLogger("example.TimeRotatingFileEmitter")
-	logger.SetLevel(xylog.DEBUG)
-	logger.AddHandler(handler)
-
-	for i := 0; i < 20; i++ {
-		// logger will write for 4s.
-		time.Sleep(200 * time.Millisecond)
-		logger.Debug("foo")
-	}
-
-	if _, err := os.Stat("exampleTime.log"); err == nil {
-		fmt.Println("Created exampleTime.log")
-	}
-
-	if _, err := os.Stat("exampleTime.log.1"); err == nil {
-		fmt.Println("Created exampleTime.log.1")
-	}
-
-	if _, err := os.Stat("exampleTime.log.2"); err == nil {
-		fmt.Println("Created exampleTime.log.2")
-	}
-
-	// Output:
-	// Created exampleTime.log
-	// Created exampleTime.log.1
-	// Created exampleTime.log.2
 }

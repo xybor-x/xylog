@@ -76,7 +76,7 @@ func (e *EventLogger) Critical() {
 
 // Log logs with a custom level.
 func (e *EventLogger) Log(level int) {
-	level = checkLevel(level)
+	level = CheckLevel(level)
 	if e.lg.isEnabledFor(level) {
 		e.lg.log(level, e.createMessage())
 	}

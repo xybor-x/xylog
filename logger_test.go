@@ -1,243 +1,178 @@
 package xylog_test
 
 import (
-	"os"
 	"testing"
 
 	"github.com/xybor-x/xycond"
 	"github.com/xybor-x/xylog"
 )
 
-func checkLogOutput(t *testing.T, f func(), msg string, lv, loggerlv int) {
-	capturedOutput = ""
-	f()
-	if lv < loggerlv {
-		xycond.ExpectEmpty(capturedOutput).Test(t)
-	} else {
-		xycond.ExpectEqual(capturedOutput, msg).Test(t)
-	}
-}
-
-type CapturedEmitter struct{}
-
-func (h *CapturedEmitter) Emit(s string) {
-	capturedOutput = s
-}
-
-func (h *CapturedEmitter) SetFormatter(xylog.Formatter) {}
-
-type NameFilter struct {
-	name string
-}
-
-func (f *NameFilter) Filter(r xylog.LogRecord) bool {
-	return f.name == r.Name
-}
-
-// capturedOutput is the output which CapturedHandler printed.
-var capturedOutput string
-
-// validCustomLevels will be added to xylog's level system.
-var validCustomLevels = []int{-1, 25, 100}
-
-// invalidCustomLevels will not be added to xylog's level system.
-var invalidCustomLevels = []int{-10, 35, 75}
-
-func init() {
-	for i := range validCustomLevels {
-		xylog.AddLevel(validCustomLevels[i], "")
-	}
-}
-
-func TestLoggerValidCustomLevel(t *testing.T) {
-	var logger = xylog.GetLogger(t.Name())
-
-	xycond.ExpectNotPanic(func() {
-		for i := range validCustomLevels {
-			logger.SetLevel(validCustomLevels[i])
-		}
-	}).Test(t)
-}
-
-func TestLoggerInvalidCustomLevel(t *testing.T) {
-	var logger = xylog.GetLogger(t.Name())
-
-	for i := range invalidCustomLevels {
-		xycond.ExpectPanic(func() {
-			logger.SetLevel(invalidCustomLevels[i])
-		}).Test(t)
+func TestGetLogger(t *testing.T) {
+	var names = []string{"", "foo", "foo.bar"}
+	for i := range names {
+		var logger1 = xylog.GetLogger(names[i])
+		var logger2 = xylog.GetLogger(names[i])
+		xycond.ExpectEqual(logger1, logger2).Test(t)
 	}
 }
 
 func TestLoggerHandler(t *testing.T) {
 	var handler = xylog.GetHandler("")
-	handler.AddEmitter(&CapturedEmitter{})
 	var logger = xylog.GetLogger(t.Name())
-	xycond.ExpectNotPanic(func() {
-		logger.AddHandler(handler)
-	}).Test(t)
+	xycond.ExpectNotPanic(func() { logger.AddHandler(handler) }).Test(t)
 }
 
 func TestLoggerAddHandlerNil(t *testing.T) {
 	var logger = xylog.GetLogger(t.Name())
-	xycond.ExpectPanic(func() {
-		logger.AddHandler(nil)
-	}).Test(t)
-}
-
-func TestLoggerLogfMethods(t *testing.T) {
-	var loggerLevel = xylog.WARN
-	var handler = xylog.GetHandler("")
-	handler.AddEmitter(&CapturedEmitter{})
-	var logger = xylog.GetLogger(t.Name())
-	logger.AddHandler(handler)
-	logger.SetLevel(loggerLevel)
-
-	var loggerMethods = map[int]func(string, ...any){
-		xylog.DEBUG:    logger.Debugf,
-		xylog.INFO:     logger.Infof,
-		xylog.WARN:     logger.Warnf,
-		xylog.ERROR:    logger.Errorf,
-		xylog.CRITICAL: logger.Criticalf,
-	}
-
-	for level, method := range loggerMethods {
-		checkLogOutput(t, func() { method("foo") }, "foo", level, loggerLevel)
-	}
+	xycond.ExpectPanic(func() { logger.AddHandler(nil) }).Test(t)
 }
 
 func TestLoggerLogMethods(t *testing.T) {
-	var loggerLevel = xylog.WARN
-	var handler = xylog.GetHandler("")
-	handler.AddEmitter(&CapturedEmitter{})
-	var logger = xylog.GetLogger(t.Name())
-	logger.AddHandler(handler)
-	logger.SetLevel(loggerLevel)
+	var fixedMsg = getRandomMessage()
+	withLogger(t, func(logger *xylog.Logger, w *mockWriter) {
+		var tests = []struct {
+			methodf func(string, ...any)
+			method  func(...any)
+		}{
+			{logger.Debugf, logger.Debug},
+			{logger.Infof, logger.Info},
+			{logger.Warnf, logger.Warn},
+			{logger.Warningf, logger.Warning},
+			{logger.Errorf, logger.Error},
+			{logger.Fatalf, logger.Fatal},
+			{logger.Criticalf, logger.Critical},
+		}
 
-	var loggerMethods = map[int]func(...any){
-		xylog.DEBUG:    logger.Debug,
-		xylog.INFO:     logger.Info,
-		xylog.WARN:     logger.Warn,
-		xylog.ERROR:    logger.Error,
-		xylog.CRITICAL: logger.Critical,
-	}
+		logger.SetLevel(xylog.DEBUG)
+		for i := range tests {
+			w.Reset()
+			var msg = getRandomMessage()
+			tests[i].method(msg)
+			xycond.ExpectIn(w.Captured, msg).Test(t)
 
-	for level, method := range loggerMethods {
-		checkLogOutput(t, func() { method("foo") }, "foo", level, loggerLevel)
-	}
+			w.Reset()
+			var msgf = getRandomMessage()
+			tests[i].methodf(msgf)
+			xycond.ExpectIn(w.Captured, msgf).Test(t)
+		}
+		w.Reset()
+		logger.Log(xylog.DEBUG, fixedMsg)
+		xycond.ExpectIn(w.Captured, fixedMsg).Test(t)
+		w.Reset()
+		logger.Logf(xylog.DEBUG, fixedMsg)
+		xycond.ExpectIn(w.Captured, fixedMsg).Test(t)
+
+		logger.SetLevel(xylog.NOTLOG)
+		for i := range tests {
+			w.Reset()
+			var msg = getRandomMessage()
+			tests[i].method(msg)
+			xycond.ExpectNotIn(w.Captured, msg).Test(t)
+
+			w.Reset()
+			var msgf = getRandomMessage()
+			tests[i].methodf(msgf)
+			xycond.ExpectNotIn(w.Captured, msgf).Test(t)
+		}
+		w.Reset()
+		logger.Log(xylog.DEBUG, fixedMsg)
+		xycond.ExpectNotIn(w.Captured, fixedMsg).Test(t)
+		w.Reset()
+		logger.Logf(xylog.DEBUG, fixedMsg)
+		xycond.ExpectNotIn(w.Captured, fixedMsg).Test(t)
+	})
 }
 
 func TestLoggerCallHandlerHierarchy(t *testing.T) {
-	var expectedMessage = "foo"
-	var handler = xylog.GetHandler("")
-	handler.AddEmitter(&CapturedEmitter{})
-	var logger = xylog.GetLogger(t.Name())
-	logger.SetLevel(xylog.DEBUG)
-	logger.AddHandler(handler)
+	withLogger(t, func(logger *xylog.Logger, w *mockWriter) {
+		var child = xylog.GetLogger(t.Name() + ".main")
+		logger.SetLevel(xylog.INFO)
 
-	logger = xylog.GetLogger(t.Name() + ".main")
-	capturedOutput = ""
-	logger.Info(expectedMessage)
-	xycond.ExpectEqual(capturedOutput, expectedMessage).Test(t)
-}
+		var msg = getRandomMessage()
+		child.Log(xylog.WARN, msg)
+		xycond.ExpectIn(w.Captured, msg).Test(t)
 
-func TestLoggerLogNoHandler(t *testing.T) {
-	var logger = xylog.GetLogger(t.Name())
-	logger.SetLevel(xylog.DEBUG)
-
-	xycond.ExpectNotPanic(func() {
-		logger.Infof("foo")
-	}).Test(t)
-}
-
-func TestLoggerLogNotSetLevel(t *testing.T) {
-	var logger = xylog.GetLogger(t.Name())
-
-	xycond.ExpectNotPanic(func() {
-		logger.Fatal("foo")
-	}).Test(t)
-}
-
-func TestLoggerLogInvalidCustomLevel(t *testing.T) {
-	var handler = xylog.GetHandler("")
-	handler.AddEmitter(&CapturedEmitter{})
-	var logger = xylog.GetLogger(t.Name())
-	logger.AddHandler(handler)
-	logger.SetLevel(xylog.DEBUG)
-
-	for i := range invalidCustomLevels {
-		xycond.ExpectPanic(func() {
-			logger.Logf(invalidCustomLevels[i], "msg")
-		}).Test(t)
-		xycond.ExpectPanic(func() {
-			logger.Log(invalidCustomLevels[i], "msg")
-		}).Test(t)
-	}
-}
-
-func TestLoggerLogValidCustomLevel(t *testing.T) {
-	var loggerLevel = xylog.DEBUG
-	var handler = xylog.GetHandler("")
-	handler.AddEmitter(&CapturedEmitter{})
-	var logger = xylog.GetLogger(t.Name())
-	logger.AddHandler(handler)
-	logger.SetLevel(loggerLevel)
-
-	for i := range validCustomLevels {
-		checkLogOutput(t, func() { logger.Logf(validCustomLevels[i], "foo") },
-			"foo", validCustomLevels[i], loggerLevel)
-	}
+		msg = getRandomMessage()
+		child.Log(xylog.DEBUG, msg)
+		xycond.ExpectNotIn(w.Captured, msg).Test(t)
+	})
 }
 
 func TestLoggerStack(t *testing.T) {
-	var handler = xylog.GetHandler("")
-	handler.SetFormatter(xylog.NewTextFormatter("%(levelname)s %(message)s"))
-	handler.AddEmitter(xylog.NewStreamEmitter(os.Stdout))
-	var logger = xylog.GetLogger("example.Stack")
-	logger.SetLevel(xylog.DEBUG)
-	logger.AddHandler(handler)
-
-	xycond.ExpectNotPanic(func() {
+	withLogger(t, func(logger *xylog.Logger, w *mockWriter) {
+		logger.SetLevel(xylog.DEBUG)
 		logger.Stack(xylog.DEBUG)
-	}).Test(t)
+		xycond.ExpectIn(w.Captured, "xylog.(*Logger).Stack").Test(t)
+	})
 }
 
-func TestLoggerFilter(t *testing.T) {
-	var filter = &NameFilter{}
-	var logger = xylog.GetLogger(t.Name())
-	xycond.ExpectNotPanic(func() {
-		logger.AddFilter(filter)
-	}).Test(t)
+type namefilter struct {
+	name string
+}
+
+func (f *namefilter) Filter(r xylog.LogRecord) bool {
+	return f.name == r.Name
 }
 
 func TestLoggerFilterLog(t *testing.T) {
-	var expectedMessage = "foo"
-	var handler = xylog.GetHandler("")
-	handler.AddEmitter(&CapturedEmitter{})
-	var logger = xylog.GetLogger(t.Name())
-	logger.AddHandler(handler)
-	logger.SetLevel(xylog.DEBUG)
+	withLogger(t, func(logger *xylog.Logger, w *mockWriter) {
+		for _, h := range logger.Handlers() {
+			h.AddFilter(&namefilter{t.Name() + ".main"})
+		}
+		var main = xylog.GetLogger(t.Name() + ".main")
+		var other = xylog.GetLogger(t.Name() + ".other")
 
-	capturedOutput = ""
-	logger.AddFilter(&NameFilter{t.Name()})
-	logger.Debugf(expectedMessage)
-	xycond.ExpectEqual(capturedOutput, expectedMessage).Test(t)
+		var msg = getRandomMessage()
+		main.Error(msg)
+		xycond.ExpectIn(w.Captured, msg).Test(t)
 
-	capturedOutput = ""
-	logger.AddFilter(&NameFilter{"bar name"})
-	logger.Warning(expectedMessage)
-	xycond.ExpectEmpty(capturedOutput).Test(t)
+		w.Reset()
+		other.Error(msg)
+		xycond.ExpectNotIn(w.Captured, msg).Test(t)
+	})
 }
 
 func TestLoggerAddFields(t *testing.T) {
+	withLogger(t, func(logger *xylog.Logger, w *mockWriter) {
+		logger.AddField("foo", "bar")
+
+		logger.Event("test").Error()
+		xycond.ExpectIn(w.Captured, "foo=bar").Test(t)
+
+		w.Reset()
+		logger.Error("test")
+		xycond.ExpectNotIn(w.Captured, "foo=bar").Test(t)
+	})
+}
+
+func TestLoggerLogInvalidJSONMessage(t *testing.T) {
+	withLogger(t, func(logger *xylog.Logger, w *mockWriter) {
+		logger.AddField("foo", "bar")
+
+		logger.Event("test").Field("func", func() {}).JSON().Error()
+		xycond.ExpectIn(w.Captured,
+			"An error occurred while formatting the message").Test(t)
+	})
+}
+
+func TestLoggerHandlers(t *testing.T) {
 	var handler = xylog.GetHandler("")
-	handler.AddEmitter(&CapturedEmitter{})
 	var logger = xylog.GetLogger(t.Name())
 	logger.AddHandler(handler)
-	logger.SetLevel(xylog.DEBUG)
-	logger.AddField("buzz", "bar")
+	xycond.ExpectEqual(len(logger.Handlers()), 1).Test(t)
+	xycond.ExpectEqual(logger.Handlers()[0], handler).Test(t)
 
-	capturedOutput = ""
-	logger.Event("foo").Debug()
-	xycond.ExpectEqual(capturedOutput, "buzz=bar event=foo").Test(t)
+	logger.RemoveHandler(handler)
+	xycond.ExpectEqual(len(logger.Handlers()), 0).Test(t)
+}
+
+func TestLoggerFilters(t *testing.T) {
+	var filter = &LoggerNameFilter{"foo"}
+	var logger = xylog.GetLogger(t.Name())
+	logger.AddFilter(filter)
+	xycond.ExpectEqual(len(logger.Filters()), 1).Test(t)
+	xycond.ExpectEqual(logger.Filters()[0], filter).Test(t)
+
+	logger.RemoveFilter(filter)
+	xycond.ExpectEqual(len(logger.Filters()), 0).Test(t)
 }

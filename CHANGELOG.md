@@ -2,6 +2,11 @@
 
 -   Handler now has many Emitters (instead only one).
 -   Remove root logger methods.
+-   Remove Rotating Emitters.
+-   Add more get methods to Logger and Handler.
+-   Public some functions, methods.
+-   Use lock more exactly.
+-   Refactor unittests.
 
 # v0.1.0 (Sep 04, 2022)
 

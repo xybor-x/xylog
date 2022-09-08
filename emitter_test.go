@@ -1,61 +1,45 @@
 package xylog_test
 
 import (
-	"os"
 	"testing"
 
 	"github.com/xybor-x/xycond"
-	"github.com/xybor-x/xyerror"
 	"github.com/xybor-x/xylog"
 )
 
-type ErrorWriter struct{}
-
-func (ew *ErrorWriter) Write(p []byte) (n int, err error) {
-	return 0, xyerror.BaseException.New("unknown")
-}
-
-func (ew *ErrorWriter) Close() error {
-	return nil
-}
-
 func TestNewStreamEmitterWithNil(t *testing.T) {
-	xycond.ExpectNotPanic(func() {
+	xycond.ExpectPanic(func() {
 		xylog.NewStreamEmitter(nil)
 	}).Test(t)
 }
 
 func TestStreamEmitterEmit(t *testing.T) {
-	var emitter = xylog.NewStreamEmitter(os.Stderr)
-	xycond.ExpectNotPanic(func() {
-		emitter.Emit("")
-	}).Test(t)
+	withStreamEmitter(t, func(e *xylog.StreamEmitter, w *mockWriter) {
+		var msg = getRandomMessage()
+		e.Emit(msg)
+		xycond.ExpectIn(w.Captured, msg).Test(t)
+	})
 }
 
 func TestStreamEmitterEmitError(t *testing.T) {
-	var emitter = xylog.NewStreamEmitter(&ErrorWriter{})
-	xycond.ExpectPanic(func() {
-		emitter.Emit("")
-	}).Test(t)
+	withStreamEmitter(t, func(e *xylog.StreamEmitter, w *mockWriter) {
+		w.Error = true
+		e.Emit(getRandomMessage())
+		xycond.ExpectEmpty(w.Captured).Test(t)
+	})
 }
 
-func TestFileEmitter(t *testing.T) {
-	var emitter = xylog.NewFileEmitter("a.log")
-	xycond.ExpectNotPanic(func() {
-		emitter.Emit("")
-	}).Test(t)
+func TestStreamEmitterClose(t *testing.T) {
+	withStreamEmitter(t, func(e *xylog.StreamEmitter, w *mockWriter) {
+		e.Close()
+		e.Emit(getRandomMessage())
+		xycond.ExpectEmpty(w.Captured).Test(t)
+	})
 }
 
-func TestSizeRotatingFileEmitter(t *testing.T) {
-	var emitter = xylog.NewSizeRotatingFileEmitter("a.log", 100, 1)
-	xycond.ExpectNotPanic(func() {
-		emitter.Emit("")
-	}).Test(t)
-}
-
-func TestTimeRotatingFileEmitter(t *testing.T) {
-	var emitter = xylog.NewTimeRotatingFileEmitter("a.log", 100, 1)
-	xycond.ExpectNotPanic(func() {
-		emitter.Emit("")
-	}).Test(t)
+func TestStreamEmitterCloseTwice(t *testing.T) {
+	withStreamEmitter(t, func(e *xylog.StreamEmitter, w *mockWriter) {
+		e.Close()
+		e.Close()
+	})
 }

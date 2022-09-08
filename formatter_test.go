@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/xybor-x/xycond"
+	"github.com/xybor-x/xyerror"
 	"github.com/xybor-x/xylog"
 )
 
@@ -36,11 +37,72 @@ func TestNewTextFormatterWithPercentageSign(t *testing.T) {
 	xycond.ExpectIn(fmt.Sprint(f), "%abc)s").Test(t)
 }
 
+func TestNewTextFormatterWithInvalidFormat(t *testing.T) {
+	xycond.ExpectPanic(func() { xylog.NewTextFormatter("%abc)s") }).Test(t)
+}
+
+func TestTextFormatterWithInvalidJSONMessage(t *testing.T) {
+	var f = xylog.NewTextFormatter("%(message)s")
+	var s, err = f.Format(xylog.LogRecord{
+		Message: map[string]any{"bar": func() {}},
+	})
+	xycond.ExpectError(err, xyerror.ValueError).Test(t)
+	xycond.ExpectEmpty(s).Test(t)
+}
+
+func TestTextFormatterWithInvalidMacro(t *testing.T) {
+	var f = xylog.NewTextFormatter("%(unknown)d")
+	var s, err = f.Format(xylog.LogRecord{})
+	xycond.ExpectError(err, xyerror.ValueError).Test(t)
+	xycond.ExpectEmpty(s).Test(t)
+}
+
 func TestJSONFormatterWithoutMessage(t *testing.T) {
 	var f = xylog.NewJSONFormatter().AddField("message", "message")
 	var s, err = f.Format(xylog.LogRecord{})
-	xycond.ExpectError(err, nil).Test(t)
+	xycond.ExpectNil(err).Test(t)
 	xycond.ExpectEqual(s, `{"message":null}`).Test(t)
+}
+
+func TestJSONFormatterWithInvalidJSONMessage(t *testing.T) {
+	var f = xylog.NewJSONFormatter().AddField("message", "message")
+	var s, err = f.Format(xylog.LogRecord{
+		Message: map[string]any{"bar": func() {}},
+	})
+	xycond.ExpectError(err, xyerror.ValueError).Test(t)
+	xycond.ExpectEmpty(s).Test(t)
+}
+
+func TestJSONFormatterWithInvalidMacro(t *testing.T) {
+	var f = xylog.NewJSONFormatter().AddField("time", "unknown")
+	var s, err = f.Format(xylog.LogRecord{})
+	xycond.ExpectError(err, xyerror.ValueError).Test(t)
+	xycond.ExpectEmpty(s).Test(t)
+}
+
+func TestStructuredFormatterWithJSONMessage(t *testing.T) {
+	var f = xylog.NewStructuredFormatter().AddField("message", "message")
+	var s, err = f.Format(xylog.LogRecord{
+		Message: map[string]any{"foo": "bar"},
+	})
+	xycond.ExpectNil(err).Test(t)
+	xycond.ExpectEqual(s, `message={"foo":"bar"}`).Test(t)
+}
+
+func TestStructuredFormatterWithInvalidJSONMessage(t *testing.T) {
+	var f = xylog.NewStructuredFormatter().AddField("message", "message")
+	var s, err = f.Format(xylog.LogRecord{
+		Message: map[string]any{"foo": func() {}},
+	})
+	xycond.ExpectError(err, xyerror.ValueError).Test(t)
+	xycond.ExpectEmpty(s).Test(t)
+}
+
+func TestStructuredFormatterWithInvalidMacro(t *testing.T) {
+	var f = xylog.NewStructuredFormatter().AddField("message", "unknown")
+	var s, err = f.Format(xylog.LogRecord{})
+	xycond.ExpectError(err, xyerror.ValueError).Test(t)
+	xycond.ExpectEmpty(s).Test(t)
 }
 
 func TestTextFormatter(t *testing.T) {
@@ -51,7 +113,7 @@ func TestTextFormatter(t *testing.T) {
 
 	var s, err = formatter.Format(fullrecord)
 
-	xycond.ExpectError(err, nil).Test(t)
+	xycond.ExpectNil(err).Test(t)
 	xycond.ExpectEqual(s, "ASCTIME 1 FILENAME FUNCNAME LEVELNAME 2 3 MESSAGE "+
 		"MODULE 4 NAME PATHNAME 5 6").Test(t)
 }
@@ -74,7 +136,7 @@ func TestJSONFormatter(t *testing.T) {
 
 	var s, err = formatter.Format(fullrecord)
 
-	xycond.ExpectError(err, nil).Test(t)
+	xycond.ExpectNil(err).Test(t)
 	xycond.ExpectEqual(s, `{"asctime":"ASCTIME","created":1,"filename":`+
 		`"FILENAME","funcname":"FUNCNAME","levelname":"LEVELNAME","levelno":2,`+
 		`"lineno":3,"message":"MESSAGE","module":"MODULE","msecs":4,`+
@@ -99,7 +161,7 @@ func TestStructureFormatter(t *testing.T) {
 
 	var s, err = formatter.Format(fullrecord)
 
-	xycond.ExpectError(err, nil).Test(t)
+	xycond.ExpectNil(err).Test(t)
 	xycond.ExpectEqual(s, "asctime=ASCTIME created=1 filename=FILENAME "+
 		"funcname=FUNCNAME levelname=LEVELNAME levelno=2 lineno=3 "+
 		"message=MESSAGE module=MODULE msecs=4 pathname=PATHNAME process=5 "+

@@ -2,8 +2,6 @@
 package xylog
 
 import (
-	"fmt"
-	"io/fs"
 	"os"
 	"time"
 
@@ -12,11 +10,8 @@ import (
 )
 
 func init() {
-	lastHandler.AddEmitter(NewStreamEmitter(os.Stderr))
-
 	rootLogger = newlogger("", nil)
 	rootLogger.SetLevel(WARNING)
-	handlerManager = make(map[string]*Handler)
 
 	var formatter = NewTextFormatter(
 		"time=%(asctime)-30s level=%(levelname)-8s module=%(name)s %(message)s")
@@ -35,6 +30,7 @@ func init() {
 // initialized with NOTSET so that they will log all messages, even at
 // user-defined levels.
 const (
+	NOTLOG   = 1000
 	CRITICAL = 50
 	FATAL    = CRITICAL
 	ERROR    = 40
@@ -48,8 +44,9 @@ const (
 // startTime is used as the base when calculating the relative time of events.
 var startTime = time.Now().UnixMilli()
 
-// lock is used to serialize access to shared data structures in this module.
-var lock = xylock.RWLock{}
+// globalLock is used to serialize access to shared data structures in this
+// module.
+var globalLock = &xylock.RWLock{}
 
 // processid is always fixed and used to fill %(process) macro.
 var processid = os.Getpid()
@@ -64,21 +61,16 @@ var timeLayout = time.RFC3339Nano
 // defaultFormatter is the formatter used to initialize handler.
 var defaultFormatter = NewTextFormatter("%(message)s")
 
-// lastHandler is used when no handler is configured to handle the log record.
-var lastHandler = GetHandler("")
-
 // handlerManager is a map to search handler by name.
-var handlerManager map[string]*Handler
-
-// fileflag is the flag to open a logging file.
-var fileflag = os.O_WRONLY | os.O_APPEND | os.O_CREATE
-
-// fileperm is the file permission when creating a logging file.
-var fileperm fs.FileMode = 0666
+var handlerManager = make(map[string]*Handler)
 
 // skipCall is the depth of Logger.log call in program, 2 by default. Increase
 // this value if you want to wrap log methods of logger.
 var skipCall = 2
+
+// bufferSize is the expected size of buffer when creating a bufio.Writer from
+// io.Writer.
+var bufferSize = 4096
 
 var levelToName = map[int]string{
 	CRITICAL: "CRITICAL",
@@ -89,28 +81,22 @@ var levelToName = map[int]string{
 	NOTSET:   "NOTSET",
 }
 
-// SetFileFlag sets the mode when open logging files. It is os.O_WRONLY |
-// os.O_APPEND | os.O_CREATE by default.
-func SetFileFlag(flag int) {
-	lock.WLockFunc(func() { fileflag = flag })
-}
-
-// SetFilePerm sets the mode when open logging files. It is os.O_WRONLY |
-// os.O_APPEND | os.O_CREATE by default.
-func SetFilePerm(perm fs.FileMode) {
-	lock.WLockFunc(func() { fileperm = perm })
-}
-
 // SetSkipCall sets the new skipCall value which dertermine the depth call of
 // Logger.log method.
 func SetSkipCall(skip int) {
-	lock.WLockFunc(func() { skipCall = skip })
+	globalLock.WLockFunc(func() { skipCall = skip })
 }
 
 // SetTimeLayout sets the time layout to print asctime. It is time.RFC3339Nano
 // by default.
 func SetTimeLayout(layout string) {
-	lock.WLockFunc(func() { timeLayout = layout })
+	globalLock.WLockFunc(func() { timeLayout = layout })
+}
+
+// SetBufferSize sets the new expected size of buffer when creating the
+// bufio.Writer.
+func SetBufferSize(s int) {
+	globalLock.WLockFunc(func() { bufferSize = s })
 }
 
 // AddLevel associates a log level with name. It can overwrite other log levels.
@@ -122,43 +108,34 @@ func SetTimeLayout(layout string) {
 //   ERROR/FATAL  40
 //   CRITICAL     50
 func AddLevel(level int, levelName string) {
-	lock.WLockFunc(func() { levelToName[level] = levelName })
+	globalLock.WLockFunc(func() { levelToName[level] = levelName })
 }
 
-// getLevelName returns a name associated with the given level.
-func getLevelName(level int) string {
-	return lock.RLockFunc(func() any {
-		return levelToName[level]
-	}).(string)
-}
-
-// checkLevel validates if the given level is registered or not.
-func checkLevel(level int) int {
-	return lock.RLockFunc(func() any {
-		if _, ok := levelToName[level]; !ok {
-			xycond.Panicf("level %d is not registered", level)
-		}
+// CheckLevel validates if the given level is associated or not.
+func CheckLevel(level int) int {
+	return globalLock.RLockFunc(func() any {
+		xycond.AssertIn(levelToName, level)
 		return level
 	}).(int)
 }
 
-// mapHandler associates a name with a handler.
-func mapHandler(name string, h *Handler) {
-	if _, ok := handlerManager[name]; ok {
-		xycond.Panicf("do not set handler with the same name (%s)", name)
-	}
-	handlerManager[name] = h
-}
-
-// prefixMessage adds a prefix to origin message if the prefix is not empty.
-func prefixMessage(prefix, msg string) string {
-	if prefix != "" {
-		msg = fmt.Sprintf("%s %s", prefix, msg)
-	}
-	return msg
+// GetLevelName returns a name associated with the given level.
+func GetLevelName(level int) string {
+	return globalLock.RLockFunc(func() any {
+		xycond.AssertIn(levelToName, level)
+		return levelToName[level]
+	}).(string)
 }
 
 type field struct {
 	key   string
 	value any
+}
+
+// prefixMessage adds a prefix to origin message if the prefix is not empty.
+func prefixMessage(prefix, msg string) string {
+	if prefix != "" {
+		msg = prefix + " " + msg
+	}
+	return msg
 }
