@@ -37,25 +37,15 @@ same name will always return the same `Logger` object.
 `Logger` names are dot-separated hierarchical names, such as "a", "a.b", "a.b.c"
 or similar. For "a.b.c", its parents are "a" and "a.b".
 
-When a `LogRecord` passes through a `Logger`, it will be handled by all
-`Handlers` of `Logger` itself and `Logger`'s parents.
-
-You can logs a message by using one of built-in logging methods, such as:
-
-```golang
-func Log(level int, a ...any)
-func Logf(level int, msg string, a ...any)
-
-func Debug(a ...any)
-func Debugf(msg string, a ...any)
-```
+When a `LogRecord` is decided to log by a `Logger`, it will be handled by all
+`Handlers` of the `Logger` itself and `Logger`'s parents.
 
 ### EventLogger
 
 `EventLogger` is a `Logger` wrapper supporting to compose logging message by
 key-value fields.
 
-Use `Event` method of `Logger` to create a `EventLogger`. You must create a
+Use `Event` method of `Logger` to create an `EventLogger`. You must create a
 unique `EventLogger` each time you want to log.
 
 If you call `Logger.AddField`, every `EventLogger` created by that `Logger`
@@ -96,25 +86,23 @@ for anonymous `Handlers`.
 
 `Emitter` writes log messages to specified destination.
 
-`StreamEmitter` can be used to print logging message into `stdout` or `stderr`.
-
-`FileEmitter` can be used to write logging message to files. This package
-provides a capability of rotating log with limited size or time.
+Currently only `StreamEmitter` is supported.
 
 ## Formatter
 
 `Formatter` converts a `LogRecord` to text.
 
-Attributes of `LogRecord` are called macros. Macros' value is filled when the
+Attributes of `LogRecord` are called macros. Macros' values are filled when the
 `LogRecord` is created by the `Logger`. Using macros is the easy way to
-construct a logging message with dynamic and complex values.
+construct a logging message with dynamic and complex values (such as time, line
+number, function name, etc).
 
-`TextFormatter` is a simple `Formatter` which uses macros and format string to
-format the message.
+`TextFormatter` is a simple `Formatter` which uses format string to format
+macros to message.
 
 `JSONFormatter` allows to create a logging message of JSON format.
 
-`StructureFormatter` allows to create a logging message with format of
+`StructuredFormatter` allows to create a logging message with format of
 `key=value`.
 
 | MACRO             | DESCRIPTION                                                                                                                                      |
@@ -145,23 +133,21 @@ if it allows to log the `LogRecord`, and vice versa.
 
 # Benchmark
 
-CPU: Intel(R) Xeon(R) Platinum 8272CL CPU @ 2.60GHz
+CPU: AMD Ryzen 7 5800H (16CPU~3.2GHz)
 
 | op name                | time per op |
 | ---------------------- | ----------- |
-| GetSameLogger          | 199ns       |
-| GetRandomLogger        | 325ns       |
+| GetSameLogger          | 122ns       |
+| GetRandomLogger        | 324ns       |
 | GetSameHandler         | 5ns         |
-| GetRandomHandler       | 30ns        |
-| TextFormatter          | 632ns       |
-| JSONFormatter          | 3032ns      |
-| LogWithoutHandler      | 36ns        |
-| EventLogWithoutHandler | 246ns       |
-| LogWithOneHandler      | 3604ns      |
-| LogWith100Handler      | 101268ns    |
-| LogWithStream          | 7389ns      |
-| LogWithFile            | 11372ns     |
-| LogWithRotateFile      | 16234ns     |
+| GetRandomHandler       | 69ns        |
+| TextFormatter          | 546ns       |
+| StructuredFormatter    | 2932ns      |
+| JSONFormatter          | 5182ns      |
+| LogWithoutHandler      | 75ns        |
+| LogTextFormatter       | 2589ns      |
+| LogJSONFormatter       | 4303ns      |
+| LogStructuredFormatter | 4981ns      |
 
 # Example
 
@@ -187,6 +173,7 @@ logger.Debug("foo")
 ```
 
 ## Advanced
+
 ```golang
 // setup.go
 var emitter = xylog.NewFileEmitter("example.log")
@@ -217,7 +204,7 @@ logger.Event("delete-user").Field("user_id", 5).JSON().Warning()
 
 // example.log:
 // time=[time] level=DEBUG module=example.advanced.user host=localhost:3333 event=create-user user_id=5 name=bar
-// time=[time] level=DEBUG module=example.advanced.user {"event":"delete-user","host":"localhost:3333","user_id":5}
+// time=[time] level=WARNING module=example.advanced.user {"event":"delete-user","host":"localhost:3333","user_id":5}
 ```
 
 ```golang

@@ -1,9 +1,5 @@
 package xylog
 
-import (
-	"github.com/xybor-x/xylock"
-)
-
 // Filter instances are used to perform arbitrary filtering of LogRecord.
 type Filter interface {
 	Filter(record LogRecord) bool
@@ -12,21 +8,25 @@ type Filter interface {
 // A base class for loggers and handlers which allows them to share common code.
 type filterer struct {
 	filters []Filter
-	lock    xylock.RWLock
-}
-
-func newfilterer() *filterer {
-	return &filterer{
-		filters: nil,
-		lock:    xylock.RWLock{},
-	}
 }
 
 // AddFilter adds a specified filter.
 func (ftr *filterer) AddFilter(f Filter) {
-	ftr.lock.WLockFunc(func() {
-		ftr.filters = append(ftr.filters, f)
-	})
+	ftr.filters = append(ftr.filters, f)
+}
+
+// Filters returns all current filters.
+func (ftr *filterer) Filters() []Filter {
+	return ftr.filters
+}
+
+// RemoveFilter remove an existed filter.
+func (ftr *filterer) RemoveFilter(f Filter) {
+	for i := range ftr.filters {
+		if ftr.filters[i] == f {
+			ftr.filters = append(ftr.filters[:i], ftr.filters[i+1:]...)
+		}
+	}
 }
 
 // filter checks all filters in filterer, if there is any failed filter, it will
@@ -37,12 +37,10 @@ func (ftr *filterer) filter(record LogRecord) bool {
 		return true
 	}
 
-	return ftr.lock.RLockFunc(func() any {
-		for i := range ftr.filters {
-			if !ftr.filters[i].Filter(record) {
-				return false
-			}
+	for i := range ftr.filters {
+		if !ftr.filters[i].Filter(record) {
+			return false
 		}
-		return true
-	}).(bool)
+	}
+	return true
 }

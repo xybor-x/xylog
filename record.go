@@ -117,7 +117,7 @@ func makeRecord(
 		Extra:           extra,
 		FileName:        filepath.Base(pathname),
 		FuncName:        funcname,
-		LevelName:       getLevelName(level),
+		LevelName:       GetLevelName(level),
 		LevelNo:         level,
 		LineNo:          lineno,
 		Message:         msg,

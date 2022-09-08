@@ -76,7 +76,7 @@ func (tf TextFormatter) Format(record LogRecord) (string, error) {
 			var s []byte
 			s, err = json.Marshal(attrs[i])
 			if err != nil {
-				return "", err
+				return "", xyerror.ValueError.New(err)
 			}
 			attrs[i] = string(s)
 		}
@@ -166,7 +166,7 @@ func (sf StructuredFormatter) Format(record LogRecord) (string, error) {
 			var s []byte
 			s, err = json.Marshal(attr)
 			if err != nil {
-				return "", err
+				return "", xyerror.ValueError.New(err)
 			}
 			value = string(s)
 		default:
