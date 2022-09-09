@@ -3,6 +3,8 @@ package xylog
 import (
 	"fmt"
 	"strings"
+
+	"github.com/xybor-x/xylog/encoding"
 )
 
 // EventLogger is a logger wrapper supporting to compose logging message with
@@ -92,13 +94,16 @@ func (e *EventLogger) createMessage() any {
 		return data
 	}
 
-	var msg string
+	var msg encoding.Buffer
 	for i := range e.fields {
 		var s = fmt.Sprint(e.fields[i].value)
 		if strings.ContainsRune(s, ' ') {
 			s = "\"" + s + "\""
 		}
-		msg = prefixMessage(msg, e.fields[i].key+"="+s)
+		msg.AppendSeperator()
+		msg.AppendString(e.fields[i].key)
+		msg.AppendByte('=')
+		msg.AppendString(s)
 	}
-	return msg
+	return msg.String()
 }

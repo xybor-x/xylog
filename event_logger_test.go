@@ -21,7 +21,7 @@ func TestEventLogger(t *testing.T) {
 		for i := range tests {
 			w.Reset()
 			tests[i]()
-			xycond.ExpectIn(w.Captured, fmt.Sprintf("event=\"%s\"", msg)).
+			xycond.ExpectIn(fmt.Sprintf("event=\"%s\"", msg), w.Captured).
 				Test(t)
 		}
 	})

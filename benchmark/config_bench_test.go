@@ -26,6 +26,6 @@ func BenchmarkGetSameHandler(b *testing.B) {
 
 func BenchmarkGetRandomHandler(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		xylog.GetHandler(loggerNames[i%len(loggerNames)])
+		xylog.GetHandler(getRandomLoggerName())
 	}
 }

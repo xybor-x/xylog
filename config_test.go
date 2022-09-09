@@ -5,19 +5,20 @@ import (
 	"time"
 
 	"github.com/xybor-x/xycond"
+	"github.com/xybor-x/xyerror"
 	"github.com/xybor-x/xylog"
 )
 
 func TestConfigSet(t *testing.T) {
-	xycond.ExpectNotPanic(func() {
-		xylog.SetBufferSize(4096)
-		xylog.SetTimeLayout(time.RFC3339Nano)
-		xylog.SetSkipCall(2)
-	}).Test(t)
+	xylog.SetBufferSize(4096)
+	xylog.SetTimeLayout(time.RFC3339Nano)
+	xylog.SetSkipCall(2)
 }
 
 func TestLevel(t *testing.T) {
 	xylog.AddLevel(130, "TEST")
-	xycond.ExpectNotPanic(func() { xylog.CheckLevel(130) }).Test(t)
-	xycond.ExpectPanic(func() { xylog.CheckLevel(150) }).Test(t)
+	xycond.ExpectEqual(xylog.CheckLevel(130), 130).Test(t)
+	xycond.ExpectPanic(xyerror.AssertionError, func() {
+		xylog.CheckLevel(150)
+	}).Test(t)
 }

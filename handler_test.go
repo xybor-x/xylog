@@ -1,6 +1,7 @@
 package xylog_test
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -30,9 +31,9 @@ func TestGetHandlerWithEmptyName(t *testing.T) {
 
 func TestHandlerSetFormatter(t *testing.T) {
 	var handler = xylog.GetHandler("")
-	xycond.ExpectNotPanic(func() {
-		handler.SetFormatter(xylog.NewTextFormatter(""))
-	}).Test(t)
+	var formatter = xylog.NewTextFormatter("")
+	handler.SetFormatter(formatter)
+	xycond.ExpectEqual(fmt.Sprint(handler.Formatter()), fmt.Sprint(formatter))
 }
 
 func TestHandlerSetLevel(t *testing.T) {

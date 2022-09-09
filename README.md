@@ -133,21 +133,21 @@ if it allows to log the `LogRecord`, and vice versa.
 
 # Benchmark
 
-CPU: AMD Ryzen 7 5800H (16CPU~3.2GHz)
+CPU: AMD Ryzen 7 5800H (3.2GHz)
 
 | op name                | time per op |
-| ---------------------- | ----------- |
-| GetSameLogger          | 122ns       |
-| GetRandomLogger        | 324ns       |
-| GetSameHandler         | 5ns         |
-| GetRandomHandler       | 69ns        |
-| TextFormatter          | 546ns       |
-| StructuredFormatter    | 2932ns      |
-| JSONFormatter          | 5182ns      |
-| LogWithoutHandler      | 75ns        |
-| LogTextFormatter       | 2589ns      |
-| LogJSONFormatter       | 4303ns      |
-| LogStructuredFormatter | 4981ns      |
+| ---------------------- | ----------: |    
+| GetSameLogger          |       122ns |
+| GetRandomLogger        |       324ns |
+| GetSameHandler         |         5ns |
+| GetRandomHandler       |        69ns |
+| TextFormatter          |       546ns |
+| StructuredFormatter    |      2932ns |
+| JSONFormatter          |      5182ns |
+| LogWithoutHandler      |        75ns |
+| LogTextFormatter       |      2355ns |
+| LogJSONFormatter       |      2871ns |
+| LogStructuredFormatter |      4418ns |
 
 # Example
 

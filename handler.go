@@ -131,6 +131,6 @@ func (h *Handler) filter(r LogRecord) bool {
 
 // mapHandler associates a name with a handler.
 func mapHandler(name string, h *Handler) {
-	xycond.AssertNotIn(handlerManager, name)
+	xycond.AssertNotIn(name, handlerManager)
 	handlerManager[name] = h
 }
