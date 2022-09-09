@@ -7,6 +7,7 @@
 -   Public some functions, methods.
 -   Use lock more exactly.
 -   Refactor unittests.
+-   Improve performance by using buffer.
 
 # v0.1.0 (Sep 04, 2022)
 

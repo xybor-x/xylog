@@ -29,16 +29,18 @@ var fullrecord = xylog.LogRecord{
 func TestNewTextFormatter(t *testing.T) {
 	var f = xylog.NewTextFormatter(
 		"time=%(asctime)s %(levelno).3d %(module)s something")
-	xycond.ExpectIn(fmt.Sprint(f), "time=%s %.3d %s something").Test(t)
+	xycond.ExpectIn("time=%s %.3d %s something", fmt.Sprint(f)).Test(t)
 }
 
 func TestNewTextFormatterWithPercentageSign(t *testing.T) {
 	var f = xylog.NewTextFormatter("%%abc)s")
-	xycond.ExpectIn(fmt.Sprint(f), "%abc)s").Test(t)
+	xycond.ExpectIn("%abc)s", fmt.Sprint(f)).Test(t)
 }
 
 func TestNewTextFormatterWithInvalidFormat(t *testing.T) {
-	xycond.ExpectPanic(func() { xylog.NewTextFormatter("%abc)s") }).Test(t)
+	xycond.ExpectPanic(xyerror.AssertionError, func() {
+		xylog.NewTextFormatter("%abc)s")
+	}).Test(t)
 }
 
 func TestTextFormatterWithInvalidJSONMessage(t *testing.T) {

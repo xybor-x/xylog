@@ -6,6 +6,7 @@ import (
 
 	"github.com/xybor-x/xycond"
 	"github.com/xybor-x/xyerror"
+	"github.com/xybor-x/xylog/encoding"
 )
 
 // Formatter instances are used to convert a LogRecord to text.
@@ -51,7 +52,7 @@ func NewTextFormatter(s string) TextFormatter {
 				}
 				tf.names = append(tf.names, token)
 			default:
-				xycond.Panicf("unexpected token: %s", s[i-2:i])
+				xycond.Panicf("unexpected token: %s", s[i-1:i+1])
 			}
 		}
 		i++
@@ -153,7 +154,8 @@ func (sf *StructuredFormatter) AddField(
 
 // Format creates the logging message with the form of key=value.
 func (sf StructuredFormatter) Format(record LogRecord) (string, error) {
-	var msg string
+	var buf = encoding.Buffer{}
+
 	for _, f := range sf.fields {
 		var attr, err = record.getAttributeByName(f.value.(string))
 		if err != nil {
@@ -174,11 +176,15 @@ func (sf StructuredFormatter) Format(record LogRecord) (string, error) {
 		}
 
 		if f.key == "" {
-			msg = prefixMessage(msg, value)
+			buf.AppendSeperator()
+			buf.AppendString(value)
 		} else {
-			msg = prefixMessage(msg, fmt.Sprintf("%s=%s", f.key, value))
+			buf.AppendSeperator()
+			buf.AppendString(f.key)
+			buf.AppendByte('=')
+			buf.AppendString(value)
 		}
 	}
 
-	return msg, nil
+	return buf.String(), nil
 }

@@ -114,7 +114,7 @@ func AddLevel(level int, levelName string) {
 // CheckLevel validates if the given level is associated or not.
 func CheckLevel(level int) int {
 	return globalLock.RLockFunc(func() any {
-		xycond.AssertIn(levelToName, level)
+		xycond.AssertIn(level, levelToName)
 		return level
 	}).(int)
 }
@@ -122,7 +122,6 @@ func CheckLevel(level int) int {
 // GetLevelName returns a name associated with the given level.
 func GetLevelName(level int) string {
 	return globalLock.RLockFunc(func() any {
-		xycond.AssertIn(levelToName, level)
 		return levelToName[level]
 	}).(string)
 }
@@ -130,12 +129,4 @@ func GetLevelName(level int) string {
 type field struct {
 	key   string
 	value any
-}
-
-// prefixMessage adds a prefix to origin message if the prefix is not empty.
-func prefixMessage(prefix, msg string) string {
-	if prefix != "" {
-		msg = prefix + " " + msg
-	}
-	return msg
 }

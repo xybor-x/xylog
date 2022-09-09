@@ -4,11 +4,12 @@ import (
 	"testing"
 
 	"github.com/xybor-x/xycond"
+	"github.com/xybor-x/xyerror"
 	"github.com/xybor-x/xylog"
 )
 
 func TestNewStreamEmitterWithNil(t *testing.T) {
-	xycond.ExpectPanic(func() {
+	xycond.ExpectPanic(xyerror.AssertionError, func() {
 		xylog.NewStreamEmitter(nil)
 	}).Test(t)
 }
@@ -17,7 +18,7 @@ func TestStreamEmitterEmit(t *testing.T) {
 	withStreamEmitter(t, func(e *xylog.StreamEmitter, w *mockWriter) {
 		var msg = getRandomMessage()
 		e.Emit(msg)
-		xycond.ExpectIn(w.Captured, msg).Test(t)
+		xycond.ExpectIn(msg, w.Captured).Test(t)
 	})
 }
 

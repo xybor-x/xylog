@@ -16,17 +16,6 @@ func TestGetLogger(t *testing.T) {
 	}
 }
 
-func TestLoggerHandler(t *testing.T) {
-	var handler = xylog.GetHandler("")
-	var logger = xylog.GetLogger(t.Name())
-	xycond.ExpectNotPanic(func() { logger.AddHandler(handler) }).Test(t)
-}
-
-func TestLoggerAddHandlerNil(t *testing.T) {
-	var logger = xylog.GetLogger(t.Name())
-	xycond.ExpectPanic(func() { logger.AddHandler(nil) }).Test(t)
-}
-
 func TestLoggerLogMethods(t *testing.T) {
 	var fixedMsg = getRandomMessage()
 	withLogger(t, func(logger *xylog.Logger, w *mockWriter) {
@@ -48,38 +37,38 @@ func TestLoggerLogMethods(t *testing.T) {
 			w.Reset()
 			var msg = getRandomMessage()
 			tests[i].method(msg)
-			xycond.ExpectIn(w.Captured, msg).Test(t)
+			xycond.ExpectIn(msg, w.Captured).Test(t)
 
 			w.Reset()
 			var msgf = getRandomMessage()
 			tests[i].methodf(msgf)
-			xycond.ExpectIn(w.Captured, msgf).Test(t)
+			xycond.ExpectIn(msgf, w.Captured).Test(t)
 		}
 		w.Reset()
 		logger.Log(xylog.DEBUG, fixedMsg)
-		xycond.ExpectIn(w.Captured, fixedMsg).Test(t)
+		xycond.ExpectIn(fixedMsg, w.Captured).Test(t)
 		w.Reset()
 		logger.Logf(xylog.DEBUG, fixedMsg)
-		xycond.ExpectIn(w.Captured, fixedMsg).Test(t)
+		xycond.ExpectIn(fixedMsg, w.Captured).Test(t)
 
 		logger.SetLevel(xylog.NOTLOG)
 		for i := range tests {
 			w.Reset()
 			var msg = getRandomMessage()
 			tests[i].method(msg)
-			xycond.ExpectNotIn(w.Captured, msg).Test(t)
+			xycond.ExpectNotIn(msg, w.Captured).Test(t)
 
 			w.Reset()
 			var msgf = getRandomMessage()
 			tests[i].methodf(msgf)
-			xycond.ExpectNotIn(w.Captured, msgf).Test(t)
+			xycond.ExpectNotIn(msgf, w.Captured).Test(t)
 		}
 		w.Reset()
 		logger.Log(xylog.DEBUG, fixedMsg)
-		xycond.ExpectNotIn(w.Captured, fixedMsg).Test(t)
+		xycond.ExpectNotIn(fixedMsg, w.Captured).Test(t)
 		w.Reset()
 		logger.Logf(xylog.DEBUG, fixedMsg)
-		xycond.ExpectNotIn(w.Captured, fixedMsg).Test(t)
+		xycond.ExpectNotIn(fixedMsg, w.Captured).Test(t)
 	})
 }
 
@@ -90,11 +79,11 @@ func TestLoggerCallHandlerHierarchy(t *testing.T) {
 
 		var msg = getRandomMessage()
 		child.Log(xylog.WARN, msg)
-		xycond.ExpectIn(w.Captured, msg).Test(t)
+		xycond.ExpectIn(msg, w.Captured).Test(t)
 
 		msg = getRandomMessage()
 		child.Log(xylog.DEBUG, msg)
-		xycond.ExpectNotIn(w.Captured, msg).Test(t)
+		xycond.ExpectNotIn(msg, w.Captured).Test(t)
 	})
 }
 
@@ -102,7 +91,7 @@ func TestLoggerStack(t *testing.T) {
 	withLogger(t, func(logger *xylog.Logger, w *mockWriter) {
 		logger.SetLevel(xylog.DEBUG)
 		logger.Stack(xylog.DEBUG)
-		xycond.ExpectIn(w.Captured, "xylog.(*Logger).Stack").Test(t)
+		xycond.ExpectIn("xylog.(*Logger).Stack", w.Captured).Test(t)
 	})
 }
 
@@ -124,11 +113,11 @@ func TestLoggerFilterLog(t *testing.T) {
 
 		var msg = getRandomMessage()
 		main.Error(msg)
-		xycond.ExpectIn(w.Captured, msg).Test(t)
+		xycond.ExpectIn(msg, w.Captured).Test(t)
 
 		w.Reset()
 		other.Error(msg)
-		xycond.ExpectNotIn(w.Captured, msg).Test(t)
+		xycond.ExpectNotIn(msg, w.Captured).Test(t)
 	})
 }
 
@@ -137,11 +126,11 @@ func TestLoggerAddFields(t *testing.T) {
 		logger.AddField("foo", "bar")
 
 		logger.Event("test").Error()
-		xycond.ExpectIn(w.Captured, "foo=bar").Test(t)
+		xycond.ExpectIn("foo=bar", w.Captured).Test(t)
 
 		w.Reset()
 		logger.Error("test")
-		xycond.ExpectNotIn(w.Captured, "foo=bar").Test(t)
+		xycond.ExpectNotIn("foo=bar", w.Captured).Test(t)
 	})
 }
 
@@ -150,8 +139,8 @@ func TestLoggerLogInvalidJSONMessage(t *testing.T) {
 		logger.AddField("foo", "bar")
 
 		logger.Event("test").Field("func", func() {}).JSON().Error()
-		xycond.ExpectIn(w.Captured,
-			"An error occurred while formatting the message").Test(t)
+		xycond.ExpectIn("An error occurred while formatting the message",
+			w.Captured).Test(t)
 	})
 }
 
