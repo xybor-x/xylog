@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/xybor-x/xycond"
 	"github.com/xybor-x/xyerror"
 	"github.com/xybor-x/xylog/encoding"
 )
@@ -16,175 +15,115 @@ import (
 // human or an external system.
 type Formatter interface {
 	Format(LogRecord) (string, error)
+	AddMacro(string, string) Formatter
+	AddField(string, any) Formatter
 }
 
-// The TextFormatter can be initialized with a format string which makes use of
-// knowledge of the LogRecord attributes - e.g. %(message)s or %(levelno)d. See
-// LogRecord for more details.
+// TextFormatter formats the logging message with the form of key=value.
 type TextFormatter struct {
-	fmtstr string
-	names  []string
+	macros []macroField
+	fixed  *encoding.Buffer
 }
 
-// NewTextFormatter creates a textFormatter which uses LogRecord macros and
-// format string to contribute logging string, e.g. %(message)s or %(levelno)d.
-// See LogRecord for more details.
-func NewTextFormatter(s string) TextFormatter {
-	var tf = TextFormatter{}
-	var i, n = 0, len(s)
-	for i < n {
-		tf.fmtstr += string(s[i])
-		if s[i] == '%' {
-			xycond.AssertLessThan(i+1, n)
-			i++
-			switch s[i] {
-			case '%':
-			case '(':
-				i++
-				var token = ""
-				for {
-					xycond.AssertLessThan(i, n)
-					if s[i] == ')' {
-						break
-					}
-					token += string(s[i])
-					i++
-				}
-				tf.names = append(tf.names, token)
-			default:
-				xycond.Panicf("unexpected token: %s", s[i-1:i+1])
-			}
-		}
-		i++
+// NewTextFormatter creates an empty TextFormatter.
+func NewTextFormatter() *TextFormatter {
+	return &TextFormatter{
+		macros: make([]macroField, 0, 10),
+		fixed:  encoding.NewBuffer(),
 	}
+}
 
+// AddMacro adds the macro to logging message under a name. It returns itself.
+func (tf *TextFormatter) AddMacro(name, macro string) Formatter {
+	tf.macros = append(tf.macros, macroField{key: name, macro: macro})
 	return tf
 }
 
-// Format creates a logging string by combining format string and logging
-// record.
+// AddField adds a fixed field to logging message. It returns itself.
+func (tf *TextFormatter) AddField(name string, value any) Formatter {
+	tf.fixed.AppendSeperator()
+	tf.fixed.AppendString(name)
+	tf.fixed.AppendByte('=')
+	tf.fixed.AppendQuotedString(fmt.Sprint(value))
+	return tf
+}
+
+// Format creates the logging message with the form of key=value.
 func (tf TextFormatter) Format(record LogRecord) (string, error) {
-	var err error
-	var attrs = make([]any, len(tf.names))
-	for i := range tf.names {
-		attrs[i], err = record.getAttributeByName(tf.names[i])
+	var buf = tf.fixed.Copy()
+
+	for _, m := range tf.macros {
+		var attr, err = record.getValue(m.macro)
 		if err != nil {
 			return "", err
 		}
 
-		switch attrs[i].(type) {
-		case map[string]any:
-			var s []byte
-			s, err = json.Marshal(attrs[i])
-			if err != nil {
-				return "", xyerror.ValueError.New(err)
-			}
-			attrs[i] = string(s)
-		}
+		buf.AppendSeperator()
+		buf.AppendString(m.key)
+		buf.AppendByte('=')
+		buf.AppendQuotedString(fmt.Sprint(attr))
 	}
 
-	return fmt.Sprintf(tf.fmtstr, attrs...), nil
+	for _, f := range record.Fields {
+		buf.AppendSeperator()
+		buf.AppendString(f.key)
+		buf.AppendByte('=')
+		buf.AppendQuotedString(fmt.Sprint(f.value))
+	}
+
+	return buf.String(), nil
 }
 
 // JSONFormatter allows logging message to be parsed as json format.
 type JSONFormatter struct {
-	fields []field
+	macros []macroField
+	fields map[string]any
 }
 
 // NewJSONFormatter returns an empty JSONFormatter.
 func NewJSONFormatter() *JSONFormatter {
-	return &JSONFormatter{fields: make([]field, 0, 5)}
+	return &JSONFormatter{
+		macros: make([]macroField, 0, 5),
+		fields: make(map[string]any),
+	}
 }
 
-// AddField adds the macro value to the logging message under a name. It returns
-// itself. For {message} macro and JSON event logger, you could leave the name
-// as empty if you want to add all fields of message into the outer object
-// directly.
-func (js *JSONFormatter) AddField(name, macro string) *JSONFormatter {
-	js.fields = append(js.fields, field{key: name, value: macro})
+// AddMacro adds the macro value to the logging message under a name. It returns
+// itself.
+func (js *JSONFormatter) AddMacro(name, macro string) Formatter {
+	js.macros = append(js.macros, macroField{key: name, macro: macro})
+	return js
+}
+
+// AddField adds a fixed field to the logging message. It returns itself.
+func (js *JSONFormatter) AddField(name string, value any) Formatter {
+	js.fields[name] = value
 	return js
 }
 
 // Format creates the logging message of JSON format.
 func (js JSONFormatter) Format(record LogRecord) (string, error) {
-	var err error
+	// Copy the predefined fields to the new map.
 	var data = make(map[string]any)
-	for _, f := range js.fields {
-		var attr, err = record.getAttributeByName(f.value.(string))
+	for k, v := range js.fields {
+		data[k] = v
+	}
+
+	for _, m := range js.macros {
+		var attr, err = record.getValue(m.macro)
 		if err != nil {
 			return "", err
 		}
-
-		if mattr, ok := attr.(map[string]any); ok && f.key == "" {
-			for k, v := range mattr {
-				data[k] = v
-			}
-		} else {
-			data[f.key] = attr
-		}
+		data[m.key] = attr
 	}
 
-	var s []byte
-	s, err = json.Marshal(data)
+	for _, f := range record.Fields {
+		data[f.key] = f.value
+	}
+
+	var s, err = json.Marshal(data)
 	if err != nil {
 		return "", xyerror.ValueError.New(err)
 	}
 	return string(s), nil
-}
-
-// StructuredFormatter formats the logging message with the form of key=value.
-type StructuredFormatter struct {
-	fields []field
-}
-
-// NewStructuredFormatter creates an empty StructureFormatter.
-func NewStructuredFormatter() *StructuredFormatter {
-	return &StructuredFormatter{}
-}
-
-// AddField adds the macro to logging message under a name. It returns itself.
-// If you leave the name as empty, it will adds the macro value without the name
-// and equal character.
-func (sf *StructuredFormatter) AddField(
-	name, macro string,
-) *StructuredFormatter {
-	sf.fields = append(sf.fields, field{key: name, value: macro})
-	return sf
-}
-
-// Format creates the logging message with the form of key=value.
-func (sf StructuredFormatter) Format(record LogRecord) (string, error) {
-	var buf = encoding.Buffer{}
-
-	for _, f := range sf.fields {
-		var attr, err = record.getAttributeByName(f.value.(string))
-		if err != nil {
-			return "", err
-		}
-
-		var value string
-		switch attr.(type) {
-		case map[string]any:
-			var s []byte
-			s, err = json.Marshal(attr)
-			if err != nil {
-				return "", xyerror.ValueError.New(err)
-			}
-			value = string(s)
-		default:
-			value = fmt.Sprint(attr)
-		}
-
-		if f.key == "" {
-			buf.AppendSeperator()
-			buf.AppendString(value)
-		} else {
-			buf.AppendSeperator()
-			buf.AppendString(f.key)
-			buf.AppendByte('=')
-			buf.AppendString(value)
-		}
-	}
-
-	return buf.String(), nil
 }

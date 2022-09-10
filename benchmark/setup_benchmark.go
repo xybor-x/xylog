@@ -2,6 +2,7 @@
 package benchmark
 
 import (
+	"fmt"
 	"math/rand"
 	"os"
 	"strings"
@@ -13,6 +14,11 @@ import (
 
 func init() {
 	rand.Seed(time.Now().UnixNano())
+
+	for i := 0; i < 1000; i++ {
+		messages = append(messages,
+			fmt.Sprintf("This is a long enough message %d", i))
+	}
 
 	var letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	for i := 0; i < 100000; i++ {
@@ -26,10 +32,15 @@ func init() {
 	}
 }
 
+var messages []string
 var loggerNames []string
 
 func getRandomLoggerName() string {
 	return loggerNames[rand.Int()%len(loggerNames)]
+}
+
+func getRandomMessage() string {
+	return messages[rand.Int()%len(messages)]
 }
 
 func withBenchLogger(b *testing.B, f func(logger *xylog.Logger)) {
@@ -45,4 +56,19 @@ func withBenchLogger(b *testing.B, f func(logger *xylog.Logger)) {
 	logger.AddHandler(handler)
 
 	f(logger)
+}
+
+func addFullMacros(f xylog.Formatter) xylog.Formatter {
+	return f.AddMacro("asctime", "asctime").
+		AddMacro("created", "created").
+		AddMacro("filename", "filename").
+		AddMacro("funcname", "funcname").
+		AddMacro("levelname", "levelname").
+		AddMacro("levelno", "levelno").
+		AddMacro("lineno", "lineno").
+		AddMacro("module", "module").
+		AddMacro("msecs", "msecs").
+		AddMacro("pathname", "pathname").
+		AddMacro("process", "process").
+		AddMacro("relativeCreated", "relativeCreated")
 }

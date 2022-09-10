@@ -31,7 +31,7 @@ func TestGetHandlerWithEmptyName(t *testing.T) {
 
 func TestHandlerSetFormatter(t *testing.T) {
 	var handler = xylog.GetHandler("")
-	var formatter = xylog.NewTextFormatter("")
+	var formatter = xylog.NewTextFormatter()
 	handler.SetFormatter(formatter)
 	xycond.ExpectEqual(fmt.Sprint(handler.Formatter()), fmt.Sprint(formatter))
 }

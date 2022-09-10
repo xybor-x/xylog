@@ -13,8 +13,10 @@ func init() {
 	rootLogger = newlogger("", nil)
 	rootLogger.SetLevel(WARNING)
 
-	var formatter = NewTextFormatter(
-		"time=%(asctime)-30s level=%(levelname)-8s module=%(name)s %(message)s")
+	var formatter = NewTextFormatter().
+		AddMacro("time", "asctime").
+		AddMacro("level", "levelname").
+		AddField("module", "name")
 	var handler = GetHandler("xybor")
 	handler.AddEmitter(NewStreamEmitter(os.Stderr))
 	handler.SetFormatter(formatter)
@@ -59,7 +61,7 @@ var rootLogger *Logger
 var timeLayout = time.RFC3339Nano
 
 // defaultFormatter is the formatter used to initialize handler.
-var defaultFormatter = NewTextFormatter("%(message)s")
+var defaultFormatter = NewTextFormatter()
 
 // handlerManager is a map to search handler by name.
 var handlerManager = make(map[string]*Handler)
@@ -126,7 +128,16 @@ func GetLevelName(level int) string {
 	}).(string)
 }
 
+func makeField(key string, value any) field {
+	return field{key: key, value: value}
+}
+
 type field struct {
 	key   string
 	value any
+}
+
+type macroField struct {
+	key   string
+	macro string
 }

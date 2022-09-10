@@ -24,15 +24,15 @@ import (
 type Logger struct {
 	f *filterer
 
-	name        string
-	children    map[string]*Logger
-	parent      *Logger
-	level       int
-	handlers    []*Handler
-	lock        *xylock.RWLock
-	cache       map[int]bool
-	extra       map[string]any
-	eventFields []field
+	name     string
+	children map[string]*Logger
+	parent   *Logger
+	level    int
+	handlers []*Handler
+	lock     *xylock.RWLock
+	cache    map[int]bool
+	extra    map[string]any
+	fields   []field
 }
 
 // GetLogger gets a logger with the specified name, creating it if it doesn't
@@ -133,16 +133,15 @@ func (lg *Logger) RemoveFilter(f Filter) {
 	lg.f.RemoveFilter(f)
 }
 
-// AddExtra adds a custom macro to logging format.
-func (lg *Logger) AddExtra(key string, value any) {
+// AddExtraMacro adds a custom macro to logging format.
+func (lg *Logger) AddExtraMacro(key string, value any) {
 	lg.lock.WLockFunc(func() { lg.extra[key] = value })
 }
 
-// AddField adds a fixed key-value pair to all logging messages when using the
-// EventLogger.
+// AddField adds a fixed field to all logging message of this logger.
 func (lg *Logger) AddField(key string, value any) {
 	lg.lock.WLockFunc(func() {
-		lg.eventFields = append(lg.eventFields, field{key, value})
+		lg.fields = append(lg.fields, makeField(key, value))
 	})
 }
 
@@ -158,98 +157,98 @@ func (lg *Logger) Flush() {
 // Debug logs default formatting objects with DEBUG level.
 func (lg *Logger) Debug(a ...any) {
 	if lg.isEnabledFor(DEBUG) {
-		lg.log(DEBUG, fmt.Sprint(a...))
+		lg.log(DEBUG, makeField("messsage", fmt.Sprint(a...)))
 	}
 }
 
 // Debugf logs a formatting message with DEBUG level.
 func (lg *Logger) Debugf(s string, a ...any) {
 	if lg.isEnabledFor(DEBUG) {
-		lg.log(DEBUG, fmt.Sprintf(s, a...))
+		lg.log(DEBUG, makeField("messsage", fmt.Sprintf(s, a...)))
 	}
 }
 
 // Info logs default formatting objects with INFO level.
 func (lg *Logger) Info(a ...any) {
 	if lg.isEnabledFor(INFO) {
-		lg.log(INFO, fmt.Sprint(a...))
+		lg.log(INFO, makeField("messsage", fmt.Sprint(a...)))
 	}
 }
 
 // Infof logs a formatting message with INFO level.
 func (lg *Logger) Infof(s string, a ...any) {
 	if lg.isEnabledFor(INFO) {
-		lg.log(INFO, fmt.Sprintf(s, a...))
+		lg.log(INFO, makeField("messsage", fmt.Sprintf(s, a...)))
 	}
 }
 
 // Warn logs default formatting objects with WARN level.
 func (lg *Logger) Warn(a ...any) {
 	if lg.isEnabledFor(WARN) {
-		lg.log(WARN, fmt.Sprint(a...))
+		lg.log(WARN, makeField("messsage", fmt.Sprint(a...)))
 	}
 }
 
 // Warnf logs a formatting message with WARN level.
 func (lg *Logger) Warnf(s string, a ...any) {
 	if lg.isEnabledFor(WARN) {
-		lg.log(WARN, fmt.Sprintf(s, a...))
+		lg.log(WARN, makeField("messsage", fmt.Sprintf(s, a...)))
 	}
 }
 
 // Warning logs default formatting objects with WARNING level.
 func (lg *Logger) Warning(a ...any) {
 	if lg.isEnabledFor(WARNING) {
-		lg.log(WARNING, fmt.Sprint(a...))
+		lg.log(WARNING, makeField("messsage", fmt.Sprint(a...)))
 	}
 }
 
 // Warningf logs a formatting message with WARNING level.
 func (lg *Logger) Warningf(s string, a ...any) {
 	if lg.isEnabledFor(WARNING) {
-		lg.log(WARNING, fmt.Sprintf(s, a...))
+		lg.log(WARNING, makeField("messsage", fmt.Sprintf(s, a...)))
 	}
 }
 
 // Error logs default formatting objects with ERROR level.
 func (lg *Logger) Error(a ...any) {
 	if lg.isEnabledFor(ERROR) {
-		lg.log(ERROR, fmt.Sprint(a...))
+		lg.log(ERROR, makeField("messsage", fmt.Sprint(a...)))
 	}
 }
 
 // Errorf logs a formatting message with ERROR level.
 func (lg *Logger) Errorf(s string, a ...any) {
 	if lg.isEnabledFor(ERROR) {
-		lg.log(ERROR, fmt.Sprintf(s, a...))
+		lg.log(ERROR, makeField("messsage", fmt.Sprintf(s, a...)))
 	}
 }
 
 // Fatal logs default formatting objects with FATAL level.
 func (lg *Logger) Fatal(a ...any) {
 	if lg.isEnabledFor(FATAL) {
-		lg.log(FATAL, fmt.Sprint(a...))
+		lg.log(FATAL, makeField("messsage", fmt.Sprint(a...)))
 	}
 }
 
 // Fatalf logs a formatting message with FATAL level.
 func (lg *Logger) Fatalf(s string, a ...any) {
 	if lg.isEnabledFor(FATAL) {
-		lg.log(FATAL, fmt.Sprintf(s, a...))
+		lg.log(FATAL, makeField("messsage", fmt.Sprintf(s, a...)))
 	}
 }
 
 // Critical logs default formatting objects with CRITICAL level.
 func (lg *Logger) Critical(a ...any) {
 	if lg.isEnabledFor(CRITICAL) {
-		lg.log(CRITICAL, fmt.Sprint(a...))
+		lg.log(CRITICAL, makeField("messsage", fmt.Sprint(a...)))
 	}
 }
 
 // Criticalf logs a formatting message with CRITICAL level.
 func (lg *Logger) Criticalf(s string, a ...any) {
 	if lg.isEnabledFor(CRITICAL) {
-		lg.log(CRITICAL, fmt.Sprintf(s, a...))
+		lg.log(CRITICAL, makeField("messsage", fmt.Sprintf(s, a...)))
 	}
 }
 
@@ -257,7 +256,7 @@ func (lg *Logger) Criticalf(s string, a ...any) {
 func (lg *Logger) Log(level int, a ...any) {
 	level = CheckLevel(level)
 	if lg.isEnabledFor(level) {
-		lg.log(level, fmt.Sprint(a...))
+		lg.log(level, makeField("messsage", fmt.Sprint(a...)))
 	}
 }
 
@@ -265,7 +264,7 @@ func (lg *Logger) Log(level int, a ...any) {
 func (lg *Logger) Logf(level int, s string, a ...any) {
 	level = CheckLevel(level)
 	if lg.isEnabledFor(level) {
-		lg.log(level, fmt.Sprintf(s, a...))
+		lg.log(level, makeField("messsage", fmt.Sprintf(s, a...)))
 	}
 }
 
@@ -274,10 +273,8 @@ func (lg *Logger) Event(e string) *EventLogger {
 	var elogger = &EventLogger{
 		lg:     lg,
 		fields: make([]field, 0, 5),
-		isJSON: false,
 	}
 	elogger.Field("event", e)
-	elogger.fields = append(elogger.fields, lg.eventFields...)
 	return elogger
 }
 
@@ -287,21 +284,22 @@ func (lg *Logger) Stack(level int) {
 	var lines = strings.Split(s, "\n")
 
 	for i := range lines {
-		lg.log(level, lines[i])
+		lg.log(level, makeField("stack", strings.TrimSpace(lines[i])))
 	}
 }
 
 // log is a low-level logging method which creates a LogRecord and then calls
 // all the handlers of this logger to handle the record.
-func (lg *Logger) log(level int, msg any) {
+func (lg *Logger) log(level int, fields ...field) {
 	var pc, filename, lineno, ok = runtime.Caller(skipCall)
 	if !ok {
 		filename = "unknown"
 		lineno = -1
 	}
 
-	var record = makeRecord(lg.name, level, filename, lineno, msg, pc,
-		lg.extra)
+	fields = append(fields, lg.fields...)
+	var record = makeRecord(lg.name, level, filename, lineno, pc, lg.extra,
+		fields...)
 
 	lg.handle(record)
 }

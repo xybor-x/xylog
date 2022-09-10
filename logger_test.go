@@ -121,25 +121,31 @@ func TestLoggerFilterLog(t *testing.T) {
 	})
 }
 
-func TestLoggerAddFields(t *testing.T) {
+func TestLoggerLogInvalidJSON(t *testing.T) {
 	withLogger(t, func(logger *xylog.Logger, w *mockWriter) {
-		logger.AddField("foo", "bar")
-
-		logger.Event("test").Error()
-		xycond.ExpectIn("foo=bar", w.Captured).Test(t)
-
-		w.Reset()
-		logger.Error("test")
-		xycond.ExpectNotIn("foo=bar", w.Captured).Test(t)
+		logger.Handlers()[0].SetFormatter(xylog.NewJSONFormatter())
+		logger.Event("test").Field("func", func() {}).Error()
+		xycond.ExpectIn("An error occurred while formatting the message",
+			w.Captured).Test(t)
 	})
 }
 
-func TestLoggerLogInvalidJSONMessage(t *testing.T) {
+func TestLoggerAddExtraMacro(t *testing.T) {
 	withLogger(t, func(logger *xylog.Logger, w *mockWriter) {
-		logger.AddField("foo", "bar")
+		var formatter = xylog.NewTextFormatter().AddMacro("foo", "custom")
+		logger.AddExtraMacro("custom", "this-is-a-custom-field")
+		logger.Handlers()[0].SetFormatter(formatter)
+		logger.Event("test").Error()
+		xycond.ExpectIn(`foo="this-is-a-custom-field" event="test"`,
+			w.Captured).Test(t)
+	})
+}
 
-		logger.Event("test").Field("func", func() {}).JSON().Error()
-		xycond.ExpectIn("An error occurred while formatting the message",
+func TestLoggerAddField(t *testing.T) {
+	withLogger(t, func(logger *xylog.Logger, w *mockWriter) {
+		logger.AddField("custom", "this-is-a-custom-field")
+		logger.Event("test").Error()
+		xycond.ExpectIn(`event="test" custom="this-is-a-custom-field"`,
 			w.Captured).Test(t)
 	})
 }
@@ -148,6 +154,7 @@ func TestLoggerHandlers(t *testing.T) {
 	var handler = xylog.GetHandler("")
 	var logger = xylog.GetLogger(t.Name())
 	logger.AddHandler(handler)
+
 	xycond.ExpectEqual(len(logger.Handlers()), 1).Test(t)
 	xycond.ExpectEqual(logger.Handlers()[0], handler).Test(t)
 
@@ -159,6 +166,7 @@ func TestLoggerFilters(t *testing.T) {
 	var filter = &LoggerNameFilter{"foo"}
 	var logger = xylog.GetLogger(t.Name())
 	logger.AddFilter(filter)
+
 	xycond.ExpectEqual(len(logger.Filters()), 1).Test(t)
 	xycond.ExpectEqual(logger.Filters()[0], filter).Test(t)
 
