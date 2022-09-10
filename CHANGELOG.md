@@ -8,6 +8,9 @@
 -   Use lock more exactly.
 -   Refactor unittests.
 -   Improve performance by using buffer.
+-   Remove the old TextFormatter. StructuredFormatter is renamed to
+    TextFormatter.
+-   EventLogger is adapted with the formatter. EventLogger.JSON is removed.
 
 # v0.1.0 (Sep 04, 2022)
 

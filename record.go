@@ -22,13 +22,17 @@ type LogRecord struct {
 	// Time when the LogRecord was created (time.Now().Unix() return value).
 	Created int64
 
-	// Extra provides possibility of using more macros.
+	// This is not a macro. Extra provides possibility of using custom macros.
 	Extra map[string]any
 
-	// Filename portion of pathname.
+	// This a not a macro. Fields are always added to the logging message
+	// without calling AddMacro.
+	Fields []field
+
+	// Filename is the portion of pathname.
 	FileName string
 
-	// Function name logged the record.
+	// Funcname is the name of function which logged the record.
 	FuncName string
 
 	// Text logging level for the message ("DEBUG", "INFO", "WARNING", "ERROR",
@@ -41,9 +45,6 @@ type LogRecord struct {
 
 	// Source line number where the logging call was issued.
 	LineNo int
-
-	// The logging message.
-	Message any
 
 	// The module called log method.
 	Module string
@@ -65,7 +66,7 @@ type LogRecord struct {
 	RelativeCreated int64
 }
 
-func (r LogRecord) getAttributeByName(name string) (any, error) {
+func (r LogRecord) getValue(name string) (any, error) {
 	switch name {
 	case "asctime":
 		return r.Asctime, nil
@@ -81,8 +82,6 @@ func (r LogRecord) getAttributeByName(name string) (any, error) {
 		return r.LevelNo, nil
 	case "lineno":
 		return r.LineNo, nil
-	case "message":
-		return r.Message, nil
 	case "module":
 		return r.Module, nil
 	case "msecs":
@@ -105,8 +104,8 @@ func (r LogRecord) getAttributeByName(name string) (any, error) {
 
 // makeRecord creates specialized LogRecords.
 func makeRecord(
-	name string, level int, pathname string, lineno int, msg any, pc uintptr,
-	extra map[string]any,
+	name string, level int, pathname string, lineno int, pc uintptr,
+	extra map[string]any, fields ...field,
 ) LogRecord {
 	var created = time.Now()
 	var module, funcname = extractFromPC(pc)
@@ -115,12 +114,12 @@ func makeRecord(
 		Asctime:         created.Format(timeLayout),
 		Created:         created.Unix(),
 		Extra:           extra,
+		Fields:          fields,
 		FileName:        filepath.Base(pathname),
 		FuncName:        funcname,
 		LevelName:       GetLevelName(level),
 		LevelNo:         level,
 		LineNo:          lineno,
-		Message:         msg,
 		Module:          module,
 		Msecs:           created.Nanosecond() / int(time.Millisecond),
 		Name:            name,
@@ -135,13 +134,13 @@ func extractFromPC(pc uintptr) (module, fname string) {
 	var s = runtime.FuncForPC(pc).Name()
 
 	// Split the funcname in the form of func with receiver.
-	// E.g. module.(receiver).func
+	// module.(receiver).func for example.
 	var parts []string
 	var sep = ".("
 	parts = strings.Split(s, ".(")
 
 	// If it is not the form of func with receiver, split it with normal func.
-	// E.g. module.func
+	// module.func for example.
 	if len(parts) <= 1 {
 		sep = "."
 		parts = strings.Split(s, ".")

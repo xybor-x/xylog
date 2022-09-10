@@ -19,7 +19,7 @@ func ExampleLogger() {
 	logger.Debugf("foo %s", "bar")
 
 	// Output:
-	// foo bar
+	// messsage="foo bar"
 }
 
 func ExampleHandler() {
@@ -57,42 +57,18 @@ func ExampleEventLogger() {
 	defer logger.Flush()
 	logger.AddHandler(handler)
 	logger.SetLevel(xylog.DEBUG)
-	logger.AddField("boss", "foo")
 
 	logger.Event("create").Field("product", 1235).Debug()
-	logger.Event("use").Field("product", "bar").JSON().Debug()
 
 	// Output:
-	// event=create boss=foo product=1235
-	// {"boss":"foo","event":"use","product":"bar"}
-}
-
-func ExampleTextFormatter() {
-	var emitter = xylog.NewStreamEmitter(os.Stdout)
-	var formatter = xylog.NewTextFormatter(
-		"module=%(name)s level=%(levelname)s %(message)s custom=%(custom)s")
-
-	var handler = xylog.GetHandler("")
-	handler.AddEmitter(emitter)
-	handler.SetFormatter(formatter)
-
-	var logger = xylog.GetLogger("example.Formatter")
-	defer logger.Flush()
-	logger.AddExtra("custom", "something")
-	logger.AddHandler(handler)
-	logger.SetLevel(xylog.DEBUG)
-	logger.Debug("product=1235")
-
-	// Output:
-	// module=example.Formatter level=DEBUG product=1235 custom=something
+	// event="create" product="1235"
 }
 
 func ExampleJSONFormatter() {
 	var emitter = xylog.NewStreamEmitter(os.Stdout)
 	var formatter = xylog.NewJSONFormatter().
-		AddField("module", "name").
-		AddField("level", "levelname").
-		AddField("", "message")
+		AddMacro("module", "name").
+		AddMacro("level", "levelname")
 	var handler = xylog.GetHandler("")
 	handler.AddEmitter(emitter)
 	handler.SetFormatter(formatter)
@@ -101,30 +77,29 @@ func ExampleJSONFormatter() {
 	defer logger.Flush()
 	logger.AddHandler(handler)
 	logger.SetLevel(xylog.DEBUG)
-	logger.Event("create").Field("product", 1235).JSON().Debug()
+	logger.Event("create").Field("product", 1235).Debug()
 
 	// Output:
 	// {"event":"create","level":"DEBUG","module":"example.JSONFormatter","product":1235}
 }
 
-func ExampleStructuredFormatter() {
+func ExampleTextFormatter() {
 	var emitter = xylog.NewStreamEmitter(os.Stdout)
-	var formatter = xylog.NewStructuredFormatter().
-		AddField("module", "name").
-		AddField("level", "levelname").
-		AddField("", "message")
+	var formatter = xylog.NewTextFormatter().
+		AddMacro("module", "name").
+		AddMacro("level", "levelname")
 	var handler = xylog.GetHandler("")
 	handler.AddEmitter(emitter)
 	handler.SetFormatter(formatter)
 
-	var logger = xylog.GetLogger("example.StructuredFormatter")
+	var logger = xylog.GetLogger("example.TextFormatter")
 	defer logger.Flush()
 	logger.AddHandler(handler)
 	logger.SetLevel(xylog.DEBUG)
 	logger.Event("create").Field("employee", "david").Debug()
 
 	// Output:
-	// module=example.StructuredFormatter level=DEBUG event=create employee=david
+	// module="example.TextFormatter" level="DEBUG" event="create" employee="david"
 }
 
 func ExampleFilter() {
@@ -142,5 +117,5 @@ func ExampleFilter() {
 	xylog.GetLogger("example.filter.chat").Debug("chat foo")
 
 	// Output:
-	// chat foo
+	// messsage="chat foo"
 }

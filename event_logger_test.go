@@ -26,23 +26,3 @@ func TestEventLogger(t *testing.T) {
 		}
 	})
 }
-
-func TestEventLoggerPair(t *testing.T) {
-	withLogger(t, func(logger *xylog.Logger, w *mockWriter) {
-		logger.SetLevel(xylog.DEBUG)
-		logger.Event("something").Field("foo", "space message").Field("bar", 1).
-			Field("buzzz", true).Log(xylog.DEBUG)
-		xycond.ExpectEqual(w.Captured,
-			"event=something foo=\"space message\" bar=1 buzzz=true").Test(t)
-	})
-}
-
-func TestEventLoggerJSON(t *testing.T) {
-	withLogger(t, func(logger *xylog.Logger, w *mockWriter) {
-		logger.SetLevel(xylog.DEBUG)
-		logger.Event("something").Field("foo", "bar").Field("bar", 1).
-			Field("buzzz", true).JSON().Info()
-		xycond.ExpectEqual(w.Captured,
-			`{"bar":1,"buzzz":true,"event":"something","foo":"bar"}`).Test(t)
-	})
-}

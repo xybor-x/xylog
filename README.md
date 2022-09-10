@@ -97,13 +97,9 @@ Attributes of `LogRecord` are called macros. Macros' values are filled when the
 construct a logging message with dynamic and complex values (such as time, line
 number, function name, etc).
 
-`TextFormatter` is a simple `Formatter` which uses format string to format
-macros to message.
+`TextFormatter` allows to create a logging message with format of `key=value`.
 
 `JSONFormatter` allows to create a logging message of JSON format.
-
-`StructuredFormatter` allows to create a logging message with format of
-`key=value`.
 
 | MACRO             | DESCRIPTION                                                                                                                                      |
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -114,7 +110,6 @@ macros to message.
 | `levelname`       | Text logging level for the message ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL").                                                            |
 | `levelno`         | Numeric logging level for the message (DEBUG, INFO, WARNING, ERROR, CRITICAL).                                                                   |
 | `lineno`          | Source line number where the logging call was issued.                                                                                            |
-| `message`         | The logging message.                                                                                                                             |
 | `module`          | The module called log method.                                                                                                                    |
 | `msecs`           | Millisecond portion of the creation time.                                                                                                        |
 | `name`            | Name of the logger.                                                                                                                              |
@@ -135,19 +130,17 @@ if it allows to log the `LogRecord`, and vice versa.
 
 CPU: AMD Ryzen 7 5800H (3.2GHz)
 
-| op name                | time per op |
-| ---------------------- | ----------: |    
-| GetSameLogger          |       122ns |
-| GetRandomLogger        |       324ns |
-| GetSameHandler         |         5ns |
-| GetRandomHandler       |        69ns |
-| TextFormatter          |       546ns |
-| StructuredFormatter    |      2932ns |
-| JSONFormatter          |      5182ns |
-| LogWithoutHandler      |        75ns |
-| LogTextFormatter       |      2355ns |
-| LogJSONFormatter       |      2871ns |
-| LogStructuredFormatter |      4418ns |
+| op name           | time per op |
+| ----------------- | ----------: |
+| GetSameLogger     |       107ns |
+| GetRandomLogger   |       317ns |
+| GetSameHandler    |         5ns |
+| GetRandomHandler  |        97ns |
+| TextFormatter     |       875ns |
+| JSONFormatter     |      4712ns |
+| LogWithoutHandler |        68ns |
+| LogTextFormatter  |      3394ns |
+| LogJSONFormatter  |      4772ns |
 
 # Example
 
@@ -157,7 +150,7 @@ See more examples [here](./example_test.go).
 
 ```golang
 var emitter = xylog.NewStreamEmitter(os.Stdout)
-var formatter = xylog.NewTextFormmater("%(level)s %(message)s")
+var formatter = xylog.NewTextFormmater().AddMacro("level", "levelname")
 var handler = xylog.GetHandler("")
 handler.AddEmitter(emitter)
 handler.SetFormatter(formatter)
@@ -166,22 +159,25 @@ var logger = xylog.GetLogger("example.simple")
 logger.AddHandler(handler)
 logger.SetLevel(xylog.DEBUG)
 
-logger.Debug("foo")
+logger.Warning("foo")
 
 // Output:
-// DEBUG foo
+// level=WARNING message=foo
 ```
 
 ## Advanced
 
 ```golang
 // setup.go
-var emitter = xylog.NewFileEmitter("example.log")
-var formatter = xylog.NewStructuredFormatter().
-    AddField("time", "asctime").
-    AddField("level", "levelname").
-    AddField("module", "name").
-    AddField("", "message")
+var w, err = os.Open("example.log")
+if err != nil {
+    panic(err)
+}
+var emitter = xylog.NewStreamEmitter(w)
+var formatter = xylog.NewTextFormatter().
+    AddMacro("time", "asctime").
+    AddMacro("level", "levelname").
+    AddMacro("module", "name")
 
 var handler = xylog.GetHandler("advanced")
 handler.AddEmitter(emitter)
@@ -200,11 +196,10 @@ userLogger.SetLevel(xylog.DEBUG)
 userLogger.AddField("host", "localhost:3333")
 
 logger.Event("create-user").Field("user_id", 5).Field("name", "bar").Debug()
-logger.Event("delete-user").Field("user_id", 5).JSON().Warning()
+logger.Event("delete-user").Field("user_id", 5).Warning()
 
 // example.log:
 // time=[time] level=DEBUG module=example.advanced.user host=localhost:3333 event=create-user user_id=5 name=bar
-// time=[time] level=WARNING module=example.advanced.user {"event":"delete-user","host":"localhost:3333","user_id":5}
 ```
 
 ```golang
