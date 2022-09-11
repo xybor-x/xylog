@@ -1,5 +1,11 @@
 package encoding
 
+import "sync"
+
+var bufferPool = sync.Pool{New: func() any {
+	return &Buffer{}
+}}
+
 // Buffer is a thin wrapper around a byte slice.
 type Buffer struct {
 	buf []byte
@@ -7,7 +13,7 @@ type Buffer struct {
 
 // NewBuffer returns a buffer with underlying byte slice is allocated..
 func NewBuffer() *Buffer {
-	return &Buffer{buf: make([]byte, 0, 64)}
+	return bufferPool.Get().(*Buffer)
 }
 
 // AppendSeperator writes a space to the Buffer if it is not empty.
@@ -44,9 +50,15 @@ func (b *Buffer) String() string {
 	return string(b.buf)
 }
 
-// Copy returns a copy of Buffer with the new underlying byte slice.
-func (b *Buffer) Copy() *Buffer {
-	var c = &Buffer{buf: make([]byte, len(b.buf), cap(b.buf))}
-	copy(c.buf, b.buf)
+// Free clears the underlying byte slice and put the buffer into pool.
+func (b *Buffer) Free() {
+	b.buf = b.buf[:0]
+	bufferPool.Put(b)
+}
+
+// Clone returns a copy of Buffer with the new underlying byte slice.
+func (b *Buffer) Clone() *Buffer {
+	var c = NewBuffer()
+	c.buf = append(c.buf, b.buf...)
 	return c
 }

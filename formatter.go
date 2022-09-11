@@ -50,7 +50,8 @@ func (tf *TextFormatter) AddField(name string, value any) Formatter {
 
 // Format creates the logging message with the form of key=value.
 func (tf TextFormatter) Format(record LogRecord) (string, error) {
-	var buf = tf.fixed.Copy()
+	var buf = tf.fixed.Clone()
+	defer buf.Free()
 
 	for _, m := range tf.macros {
 		var attr, err = record.getValue(m.macro)

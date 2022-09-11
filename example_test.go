@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/xybor-x/xylog"
+	"github.com/xybor-x/xylog/test"
 )
 
 func ExampleLogger() {
@@ -106,7 +107,7 @@ func ExampleFilter() {
 	var emitter = xylog.NewStreamEmitter(os.Stdout)
 	var handler = xylog.GetHandler("")
 	handler.AddEmitter(emitter)
-	handler.AddFilter(&LoggerNameFilter{"example.filter.chat"})
+	handler.AddFilter(&test.LoggerNameFilter{Name: "example.filter.chat"})
 
 	var logger = xylog.GetLogger("example.filter")
 	defer logger.Flush()

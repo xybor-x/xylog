@@ -57,7 +57,7 @@ func (h *Handler) Level() int {
 
 // SetLevel sets the new logging level. It is NOTSET by default.
 func (h *Handler) SetLevel(level int) {
-	h.lock.WLockFunc(func() { h.level = CheckLevel(level) })
+	h.lock.WLockFunc(func() { h.level = level })
 }
 
 // Formatter returns the current Formatter.
@@ -116,8 +116,7 @@ func (h *Handler) handle(record LogRecord) {
 			msg = fmt.Sprintf(
 				"An error occurred while formatting the message (%s)", err)
 		}
-		var emitters = make([]Emitter, len(h.Emitters()))
-		copy(emitters, h.Emitters())
+		var emitters = h.Emitters()
 		for i := range emitters {
 			emitters[i].Emit(msg)
 		}

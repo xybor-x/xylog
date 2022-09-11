@@ -6,12 +6,13 @@ import (
 
 	"github.com/xybor-x/xycond"
 	"github.com/xybor-x/xylog"
+	"github.com/xybor-x/xylog/test"
 )
 
 func TestEventLogger(t *testing.T) {
-	withLogger(t, func(logger *xylog.Logger, w *mockWriter) {
+	test.WithLogger(t, func(logger *xylog.Logger, w *test.MockWriter) {
 		logger.SetLevel(xylog.DEBUG)
-		var msg = getRandomMessage()
+		var msg = test.GetRandomMessage()
 		var elogger = logger.Event(msg)
 		var tests = []func(){
 			elogger.Debug, elogger.Info, elogger.Warn, elogger.Warning,
