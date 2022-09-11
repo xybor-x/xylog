@@ -5,6 +5,7 @@ import (
 
 	"github.com/xybor-x/xycond"
 	"github.com/xybor-x/xylog"
+	"github.com/xybor-x/xylog/test"
 )
 
 func TestGetLogger(t *testing.T) {
@@ -17,8 +18,8 @@ func TestGetLogger(t *testing.T) {
 }
 
 func TestLoggerLogMethods(t *testing.T) {
-	var fixedMsg = getRandomMessage()
-	withLogger(t, func(logger *xylog.Logger, w *mockWriter) {
+	var fixedMsg = test.GetRandomMessage()
+	test.WithLogger(t, func(logger *xylog.Logger, w *test.MockWriter) {
 		var tests = []struct {
 			methodf func(string, ...any)
 			method  func(...any)
@@ -35,12 +36,12 @@ func TestLoggerLogMethods(t *testing.T) {
 		logger.SetLevel(xylog.DEBUG)
 		for i := range tests {
 			w.Reset()
-			var msg = getRandomMessage()
+			var msg = test.GetRandomMessage()
 			tests[i].method(msg)
 			xycond.ExpectIn(msg, w.Captured).Test(t)
 
 			w.Reset()
-			var msgf = getRandomMessage()
+			var msgf = test.GetRandomMessage()
 			tests[i].methodf(msgf)
 			xycond.ExpectIn(msgf, w.Captured).Test(t)
 		}
@@ -54,12 +55,12 @@ func TestLoggerLogMethods(t *testing.T) {
 		logger.SetLevel(xylog.NOTLOG)
 		for i := range tests {
 			w.Reset()
-			var msg = getRandomMessage()
+			var msg = test.GetRandomMessage()
 			tests[i].method(msg)
 			xycond.ExpectNotIn(msg, w.Captured).Test(t)
 
 			w.Reset()
-			var msgf = getRandomMessage()
+			var msgf = test.GetRandomMessage()
 			tests[i].methodf(msgf)
 			xycond.ExpectNotIn(msgf, w.Captured).Test(t)
 		}
@@ -73,45 +74,37 @@ func TestLoggerLogMethods(t *testing.T) {
 }
 
 func TestLoggerCallHandlerHierarchy(t *testing.T) {
-	withLogger(t, func(logger *xylog.Logger, w *mockWriter) {
+	test.WithLogger(t, func(logger *xylog.Logger, w *test.MockWriter) {
 		var child = xylog.GetLogger(t.Name() + ".main")
 		logger.SetLevel(xylog.INFO)
 
-		var msg = getRandomMessage()
+		var msg = test.GetRandomMessage()
 		child.Log(xylog.WARN, msg)
 		xycond.ExpectIn(msg, w.Captured).Test(t)
 
-		msg = getRandomMessage()
+		msg = test.GetRandomMessage()
 		child.Log(xylog.DEBUG, msg)
 		xycond.ExpectNotIn(msg, w.Captured).Test(t)
 	})
 }
 
 func TestLoggerStack(t *testing.T) {
-	withLogger(t, func(logger *xylog.Logger, w *mockWriter) {
+	test.WithLogger(t, func(logger *xylog.Logger, w *test.MockWriter) {
 		logger.SetLevel(xylog.DEBUG)
 		logger.Stack(xylog.DEBUG)
 		xycond.ExpectIn("xylog.(*Logger).Stack", w.Captured).Test(t)
 	})
 }
 
-type namefilter struct {
-	name string
-}
-
-func (f *namefilter) Filter(r xylog.LogRecord) bool {
-	return f.name == r.Name
-}
-
 func TestLoggerFilterLog(t *testing.T) {
-	withLogger(t, func(logger *xylog.Logger, w *mockWriter) {
+	test.WithLogger(t, func(logger *xylog.Logger, w *test.MockWriter) {
 		for _, h := range logger.Handlers() {
-			h.AddFilter(&namefilter{t.Name() + ".main"})
+			h.AddFilter(&test.LoggerNameFilter{Name: t.Name() + ".main"})
 		}
 		var main = xylog.GetLogger(t.Name() + ".main")
 		var other = xylog.GetLogger(t.Name() + ".other")
 
-		var msg = getRandomMessage()
+		var msg = test.GetRandomMessage()
 		main.Error(msg)
 		xycond.ExpectIn(msg, w.Captured).Test(t)
 
@@ -122,7 +115,7 @@ func TestLoggerFilterLog(t *testing.T) {
 }
 
 func TestLoggerLogInvalidJSON(t *testing.T) {
-	withLogger(t, func(logger *xylog.Logger, w *mockWriter) {
+	test.WithLogger(t, func(logger *xylog.Logger, w *test.MockWriter) {
 		logger.Handlers()[0].SetFormatter(xylog.NewJSONFormatter())
 		logger.Event("test").Field("func", func() {}).Error()
 		xycond.ExpectIn("An error occurred while formatting the message",
@@ -131,7 +124,7 @@ func TestLoggerLogInvalidJSON(t *testing.T) {
 }
 
 func TestLoggerAddExtraMacro(t *testing.T) {
-	withLogger(t, func(logger *xylog.Logger, w *mockWriter) {
+	test.WithLogger(t, func(logger *xylog.Logger, w *test.MockWriter) {
 		var formatter = xylog.NewTextFormatter().AddMacro("foo", "custom")
 		logger.AddExtraMacro("custom", "this-is-a-custom-field")
 		logger.Handlers()[0].SetFormatter(formatter)
@@ -142,7 +135,7 @@ func TestLoggerAddExtraMacro(t *testing.T) {
 }
 
 func TestLoggerAddField(t *testing.T) {
-	withLogger(t, func(logger *xylog.Logger, w *mockWriter) {
+	test.WithLogger(t, func(logger *xylog.Logger, w *test.MockWriter) {
 		logger.AddField("custom", "this-is-a-custom-field")
 		logger.Event("test").Error()
 		xycond.ExpectIn(`event="test" custom="this-is-a-custom-field"`,
@@ -163,7 +156,7 @@ func TestLoggerHandlers(t *testing.T) {
 }
 
 func TestLoggerFilters(t *testing.T) {
-	var filter = &LoggerNameFilter{"foo"}
+	var filter = &test.LoggerNameFilter{Name: "foo"}
 	var logger = xylog.GetLogger(t.Name())
 	logger.AddFilter(filter)
 

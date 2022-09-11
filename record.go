@@ -103,12 +103,22 @@ func (r LogRecord) getValue(name string) (any, error) {
 }
 
 // makeRecord creates specialized LogRecords.
-func makeRecord(
-	name string, level int, pathname string, lineno int, pc uintptr,
-	extra map[string]any, fields ...field,
+func makeRecord(name string, level int, extra map[string]any, fields ...field,
 ) LogRecord {
 	var created = time.Now()
-	var module, funcname = extractFromPC(pc)
+	var pc uintptr
+	var lineno int
+	var module, pathname, funcname = "unknown", "unknown", "unknown"
+	if findCaller {
+		var ok bool
+		pc, pathname, lineno, ok = runtime.Caller(skipCall)
+		if !ok {
+			pathname = "unknown"
+			lineno = -1
+		} else {
+			module, funcname = extractFromPC(pc)
+		}
+	}
 
 	return LogRecord{
 		Asctime:         created.Format(timeLayout),

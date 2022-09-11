@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/xybor-x/xylog"
+	"github.com/xybor-x/xylog/test"
 )
 
 func BenchmarkGetSameLogger(b *testing.B) {
@@ -14,7 +15,7 @@ func BenchmarkGetSameLogger(b *testing.B) {
 
 func BenchmarkGetRandomLogger(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		xylog.GetLogger(getRandomLoggerName())
+		xylog.GetLogger(test.GetRandomLoggerName())
 	}
 }
 
@@ -26,6 +27,6 @@ func BenchmarkGetSameHandler(b *testing.B) {
 
 func BenchmarkGetRandomHandler(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		xylog.GetHandler(getRandomLoggerName())
+		xylog.GetHandler(test.GetRandomLoggerName())
 	}
 }

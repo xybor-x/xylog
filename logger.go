@@ -2,7 +2,6 @@ package xylog
 
 import (
 	"fmt"
-	"runtime"
 	"runtime/debug"
 	"strings"
 
@@ -65,7 +64,9 @@ func (lg *Logger) Name() string {
 
 // Parent returns the parent logger. If there is no parent, return nil instead.
 func (lg *Logger) Parent() *Logger {
-	return lg.lock.RLockFunc(func() any { return lg.parent }).(*Logger)
+	lg.lock.RLock()
+	defer lg.lock.RUnlock()
+	return lg.parent
 }
 
 // Children returns direct children logger.
@@ -94,7 +95,9 @@ func (lg *Logger) SetLevel(level int) {
 
 // Handlers returns all current handlers.
 func (lg *Logger) Handlers() []*Handler {
-	return lg.lock.RLockFunc(func() any { return lg.handlers }).([]*Handler)
+	lg.lock.RLock()
+	defer lg.lock.RUnlock()
+	return lg.handlers
 }
 
 // AddHandler adds a new handler.
@@ -291,15 +294,8 @@ func (lg *Logger) Stack(level int) {
 // log is a low-level logging method which creates a LogRecord and then calls
 // all the handlers of this logger to handle the record.
 func (lg *Logger) log(level int, fields ...field) {
-	var pc, filename, lineno, ok = runtime.Caller(skipCall)
-	if !ok {
-		filename = "unknown"
-		lineno = -1
-	}
-
 	fields = append(fields, lg.fields...)
-	var record = makeRecord(lg.name, level, filename, lineno, pc, lg.extra,
-		fields...)
+	var record = makeRecord(lg.name, level, lg.extra, fields...)
 
 	lg.handle(record)
 }
@@ -348,8 +344,8 @@ func (lg *Logger) isEnabledFor(level int) bool {
 
 // getEffectiveLevel gets the effective level for this logger.
 //
-// Loop through this logger and its parents in the logger hierarchy,
-// looking for a non-zero logging level. Return the first one found.
+// Loop through this logger and its parents in the logger hierarchy, looking for
+// a non-zero logging level. Return the first one found.
 func (lg *Logger) getEffectiveLevel() int {
 	var level, parent = lg.Level(), lg.Parent()
 	if level != NOTSET || parent == nil {

@@ -6,23 +6,8 @@ import (
 	"github.com/xybor-x/xycond"
 	"github.com/xybor-x/xyerror"
 	"github.com/xybor-x/xylog"
+	"github.com/xybor-x/xylog/test"
 )
-
-var fullrecord = xylog.LogRecord{
-	Asctime:         "ASCTIME",
-	Created:         1,
-	FileName:        "FILENAME",
-	FuncName:        "FUNCNAME",
-	LevelName:       "LEVELNAME",
-	LevelNo:         2,
-	LineNo:          3,
-	Module:          "MODULE",
-	Msecs:           4,
-	Name:            "NAME",
-	PathName:        "PATHNAME",
-	Process:         5,
-	RelativeCreated: 6,
-}
 
 func TestJSONFormatterWithoutFields(t *testing.T) {
 	var f = xylog.NewJSONFormatter()
@@ -53,8 +38,8 @@ func TestTextFormatterWithInvalidMacro(t *testing.T) {
 }
 
 func TestJSONFormatter(t *testing.T) {
-	var formatter = addFullMacros(xylog.NewJSONFormatter())
-	var s, err = formatter.Format(fullrecord)
+	var formatter = test.AddFullMacros(xylog.NewJSONFormatter())
+	var s, err = formatter.Format(test.FullRecord)
 
 	xycond.ExpectNil(err).Test(t)
 	xycond.ExpectEqual(s, `{"asctime":"ASCTIME","created":1,"filename":`+
@@ -64,8 +49,8 @@ func TestJSONFormatter(t *testing.T) {
 }
 
 func TestStructureFormatter(t *testing.T) {
-	var formatter = addFullMacros(xylog.NewTextFormatter())
-	var s, err = formatter.Format(fullrecord)
+	var formatter = test.AddFullMacros(xylog.NewTextFormatter())
+	var s, err = formatter.Format(test.FullRecord)
 
 	xycond.ExpectNil(err).Test(t)
 	xycond.ExpectEqual(s, `asctime="ASCTIME" created="1" filename="FILENAME" `+

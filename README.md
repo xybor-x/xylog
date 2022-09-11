@@ -101,27 +101,29 @@ number, function name, etc).
 
 `JSONFormatter` allows to create a logging message of JSON format.
 
-| MACRO             | DESCRIPTION                                                                                                                                      |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `asctime`         | Textual time when the LogRecord was created.                                                                                                     |
-| `created`         | Time when the LogRecord was created (time.Now().Unix() return value).                                                                            |
-| `filename`        | Filename portion of pathname.                                                                                                                    |
-| `funcname`        | Function name logged the record.                                                                                                                 |
-| `levelname`       | Text logging level for the message ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL").                                                            |
-| `levelno`         | Numeric logging level for the message (DEBUG, INFO, WARNING, ERROR, CRITICAL).                                                                   |
-| `lineno`          | Source line number where the logging call was issued.                                                                                            |
-| `module`          | The module called log method.                                                                                                                    |
-| `msecs`           | Millisecond portion of the creation time.                                                                                                        |
-| `name`            | Name of the logger.                                                                                                                              |
-| `pathname`        | Full pathname of the source file where the logging call was issued.                                                                              |
-| `process`         | Process ID.                                                                                                                                      |
-| `relativeCreated` | Time in milliseconds when the LogRecord was created, relative to the time the logging module was loaded (typically at application startup time). |
+| MACRO             | DESCRIPTION                                                                                             |
+| ----------------- | ------------------------------------------------------------------------------------------------------- |
+| `asctime`         | Textual time when the LogRecord was created.                                                            |
+| `created`         | Time when the LogRecord was created (time.Now().Unix() return value).                                   |
+| `filename`\*      | Filename portion of pathname.                                                                           |
+| `funcname`\*      | Function name logged the record.                                                                        |
+| `levelname`       | Text logging level for the message ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL").                   |
+| `levelno`         | Numeric logging level for the message (DEBUG, INFO, WARNING, ERROR, CRITICAL).                          |
+| `lineno`\*        | Source line number where the logging call was issued.                                                   |
+| `module`\*        | The module called log method.                                                                           |
+| `msecs`           | Millisecond portion of the creation time.                                                               |
+| `name`            | Name of the logger.                                                                                     |
+| `pathname`        | Full pathname of the source file where the logging call was issued.                                     |
+| `process`         | Process ID.                                                                                             |
+| `relativeCreated` | Time in milliseconds between the time LogRecord was created and the time the logging module was loaded. |
+
+*\* These are macros that are only available if `xylog.SetFindCaller` is called with true.*
 
 ## Filter
 
 `Filter` instances are used to perform arbitrary filtering of `LogRecord`.
 
-A `Filter` struct needs to define `Format(LogRecord)` method, which return true
+A `Filter` struct needs to define `Format(LogRecord)` method, which returns true
 if it allows to log the `LogRecord`, and vice versa.
 
 `Filter` can be used in both `Handler` and `Logger`.
@@ -130,17 +132,18 @@ if it allows to log the `LogRecord`, and vice versa.
 
 CPU: AMD Ryzen 7 5800H (3.2GHz)
 
-| op name           | time per op |
-| ----------------- | ----------: |
-| GetSameLogger     |       107ns |
-| GetRandomLogger   |       317ns |
-| GetSameHandler    |         5ns |
-| GetRandomHandler  |        97ns |
-| TextFormatter     |       875ns |
-| JSONFormatter     |      4712ns |
-| LogWithoutHandler |        68ns |
-| LogTextFormatter  |      3394ns |
-| LogJSONFormatter  |      4772ns |
+| op name           | time per op |   allocation |
+| ----------------- | ----------: | -----------: |
+| GetSameLogger     |       107ns |  1 allocs/op |
+| GetRandomLogger   |       317ns |  0 allocs/op |
+| GetSameHandler    |         5ns |  0 allocs/op |
+| GetRandomHandler  |        97ns |  0 allocs/op |
+| TextFormatter     |       937ns | 13 allocs/op |
+| JSONFormatter     |      4986ns | 40 allocs/op |
+| LogDisable        |        64ns |  1 allocs/op |
+| LogWithoutHandler |       277ns |  5 allocs/op |
+| LogTextFormatter  |      2335ns | 45 allocs/op |
+| LogJSONFormatter  |      4159ns | 69 allocs/op |
 
 # Example
 

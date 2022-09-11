@@ -7,6 +7,7 @@ import (
 
 	"github.com/xybor-x/xycond"
 	"github.com/xybor-x/xylog"
+	"github.com/xybor-x/xylog/test"
 )
 
 func TestGetHandler(t *testing.T) {
@@ -43,7 +44,7 @@ func TestHandlerSetLevel(t *testing.T) {
 }
 
 func TestHandlerFileters(t *testing.T) {
-	var filter = &LoggerNameFilter{"foo"}
+	var filter = &test.LoggerNameFilter{Name: "foo"}
 	var handler = xylog.GetHandler("")
 	handler.AddFilter(filter)
 	xycond.ExpectEqual(len(handler.Filters()), 1).Test(t)

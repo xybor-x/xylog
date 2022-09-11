@@ -6,6 +6,7 @@ import (
 	"github.com/xybor-x/xycond"
 	"github.com/xybor-x/xyerror"
 	"github.com/xybor-x/xylog"
+	"github.com/xybor-x/xylog/test"
 )
 
 func TestNewStreamEmitterWithNil(t *testing.T) {
@@ -15,31 +16,31 @@ func TestNewStreamEmitterWithNil(t *testing.T) {
 }
 
 func TestStreamEmitterEmit(t *testing.T) {
-	withStreamEmitter(t, func(e *xylog.StreamEmitter, w *mockWriter) {
-		var msg = getRandomMessage()
+	test.WithStreamEmitter(t, func(e *xylog.StreamEmitter, w *test.MockWriter) {
+		var msg = test.GetRandomMessage()
 		e.Emit(msg)
 		xycond.ExpectIn(msg, w.Captured).Test(t)
 	})
 }
 
 func TestStreamEmitterEmitError(t *testing.T) {
-	withStreamEmitter(t, func(e *xylog.StreamEmitter, w *mockWriter) {
+	test.WithStreamEmitter(t, func(e *xylog.StreamEmitter, w *test.MockWriter) {
 		w.Error = true
-		e.Emit(getRandomMessage())
+		e.Emit(test.GetRandomMessage())
 		xycond.ExpectEmpty(w.Captured).Test(t)
 	})
 }
 
 func TestStreamEmitterClose(t *testing.T) {
-	withStreamEmitter(t, func(e *xylog.StreamEmitter, w *mockWriter) {
+	test.WithStreamEmitter(t, func(e *xylog.StreamEmitter, w *test.MockWriter) {
 		e.Close()
-		e.Emit(getRandomMessage())
+		e.Emit(test.GetRandomMessage())
 		xycond.ExpectEmpty(w.Captured).Test(t)
 	})
 }
 
 func TestStreamEmitterCloseTwice(t *testing.T) {
-	withStreamEmitter(t, func(e *xylog.StreamEmitter, w *mockWriter) {
+	test.WithStreamEmitter(t, func(e *xylog.StreamEmitter, w *test.MockWriter) {
 		e.Close()
 		e.Close()
 	})

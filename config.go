@@ -66,13 +66,17 @@ var defaultFormatter = NewTextFormatter()
 // handlerManager is a map to search handler by name.
 var handlerManager = make(map[string]*Handler)
 
-// skipCall is the depth of Logger.log call in program, 2 by default. Increase
+// skipCall is the depth of Logger.log call in program, 3 by default. Increase
 // this value if you want to wrap log methods of logger.
-var skipCall = 2
+var skipCall = 3
 
 // bufferSize is the expected size of buffer when creating a bufio.Writer from
 // io.Writer.
 var bufferSize = 4096
+
+// findCaller allows finding caller information including filename, lineno,
+// funcname, module.
+var findCaller = false
 
 var levelToName = map[int]string{
 	CRITICAL: "CRITICAL",
@@ -101,6 +105,12 @@ func SetBufferSize(s int) {
 	globalLock.WLockFunc(func() { bufferSize = s })
 }
 
+// SetFindCaller with true to find caller information including filename, line
+// number, function name, and module.
+func SetFindCaller() {
+	globalLock.WLockFunc(func() { findCaller = true })
+}
+
 // AddLevel associates a log level with name. It can overwrite other log levels.
 // Default log levels:
 //   NOTSET       0
@@ -115,17 +125,17 @@ func AddLevel(level int, levelName string) {
 
 // CheckLevel validates if the given level is associated or not.
 func CheckLevel(level int) int {
-	return globalLock.RLockFunc(func() any {
-		xycond.AssertIn(level, levelToName)
-		return level
-	}).(int)
+	globalLock.RLock()
+	defer globalLock.RUnlock()
+	xycond.AssertIn(level, levelToName)
+	return level
 }
 
 // GetLevelName returns a name associated with the given level.
 func GetLevelName(level int) string {
-	return globalLock.RLockFunc(func() any {
-		return levelToName[level]
-	}).(string)
+	globalLock.RLock()
+	defer globalLock.RUnlock()
+	return levelToName[level]
 }
 
 func makeField(key string, value any) field {
