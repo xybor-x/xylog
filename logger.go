@@ -84,7 +84,9 @@ func (lg *Logger) Children() []*Logger {
 
 // Level returns the current logging level.
 func (lg *Logger) Level() int {
-	return lg.lock.RLockFunc(func() any { return lg.level }).(int)
+	lg.lock.RLock()
+	defer lg.lock.RUnlock()
+	return lg.level
 }
 
 // SetLevel sets the new logging level.
@@ -93,7 +95,7 @@ func (lg *Logger) SetLevel(level int) {
 	rootLogger.clearCache()
 }
 
-// Handlers returns all current handlers.
+// Handlers returns all current Handlers.
 func (lg *Logger) Handlers() []*Handler {
 	lg.lock.RLock()
 	defer lg.lock.RUnlock()
@@ -106,7 +108,7 @@ func (lg *Logger) AddHandler(h *Handler) {
 	lg.lock.WLockFunc(func() { lg.handlers = append(lg.handlers, h) })
 }
 
-// RemoveHandler remove an existed handler.
+// RemoveHandler remove an existed Handler.
 func (lg *Logger) RemoveHandler(h *Handler) {
 	lg.lock.Lock()
 	defer lg.lock.Unlock()
@@ -118,17 +120,26 @@ func (lg *Logger) RemoveHandler(h *Handler) {
 	}
 }
 
-// Filters returns all current filters.
-func (lg *Logger) Filters() []Filter {
-	return lg.lock.RLockFunc(func() any { return lg.f.Filters() }).([]Filter)
+// RemoveAllHandlers removes all existed Handlers.
+func (lg *Logger) RemoveAllHandlers() {
+	lg.lock.Lock()
+	defer lg.lock.Unlock()
+	lg.handlers = lg.handlers[:0]
 }
 
-// AddFilter adds a specified filter.
+// Filters returns all current Filters.
+func (lg *Logger) Filters() []Filter {
+	lg.lock.RLock()
+	defer lg.lock.RUnlock()
+	return lg.f.Filters()
+}
+
+// AddFilter adds a specified Filter.
 func (lg *Logger) AddFilter(f Filter) {
 	lg.lock.WLockFunc(func() { lg.f.AddFilter(f) })
 }
 
-// RemoveFilter remove an existed filter.
+// RemoveFilter remove an existed Filter.
 func (lg *Logger) RemoveFilter(f Filter) {
 	lg.lock.Lock()
 	defer lg.lock.Unlock()
@@ -158,9 +169,9 @@ func (lg *Logger) Flush() {
 }
 
 // Debug logs default formatting objects with DEBUG level.
-func (lg *Logger) Debug(a ...any) {
+func (lg *Logger) Debug(s string) {
 	if lg.isEnabledFor(DEBUG) {
-		lg.log(DEBUG, makeField("messsage", fmt.Sprint(a...)))
+		lg.log(DEBUG, makeField("messsage", s))
 	}
 }
 
@@ -172,9 +183,9 @@ func (lg *Logger) Debugf(s string, a ...any) {
 }
 
 // Info logs default formatting objects with INFO level.
-func (lg *Logger) Info(a ...any) {
+func (lg *Logger) Info(s string) {
 	if lg.isEnabledFor(INFO) {
-		lg.log(INFO, makeField("messsage", fmt.Sprint(a...)))
+		lg.log(INFO, makeField("messsage", s))
 	}
 }
 
@@ -186,9 +197,9 @@ func (lg *Logger) Infof(s string, a ...any) {
 }
 
 // Warn logs default formatting objects with WARN level.
-func (lg *Logger) Warn(a ...any) {
+func (lg *Logger) Warn(s string) {
 	if lg.isEnabledFor(WARN) {
-		lg.log(WARN, makeField("messsage", fmt.Sprint(a...)))
+		lg.log(WARN, makeField("messsage", s))
 	}
 }
 
@@ -200,9 +211,9 @@ func (lg *Logger) Warnf(s string, a ...any) {
 }
 
 // Warning logs default formatting objects with WARNING level.
-func (lg *Logger) Warning(a ...any) {
+func (lg *Logger) Warning(s string) {
 	if lg.isEnabledFor(WARNING) {
-		lg.log(WARNING, makeField("messsage", fmt.Sprint(a...)))
+		lg.log(WARNING, makeField("messsage", s))
 	}
 }
 
@@ -214,9 +225,9 @@ func (lg *Logger) Warningf(s string, a ...any) {
 }
 
 // Error logs default formatting objects with ERROR level.
-func (lg *Logger) Error(a ...any) {
+func (lg *Logger) Error(s string) {
 	if lg.isEnabledFor(ERROR) {
-		lg.log(ERROR, makeField("messsage", fmt.Sprint(a...)))
+		lg.log(ERROR, makeField("messsage", s))
 	}
 }
 
@@ -228,9 +239,9 @@ func (lg *Logger) Errorf(s string, a ...any) {
 }
 
 // Fatal logs default formatting objects with FATAL level.
-func (lg *Logger) Fatal(a ...any) {
+func (lg *Logger) Fatal(s string) {
 	if lg.isEnabledFor(FATAL) {
-		lg.log(FATAL, makeField("messsage", fmt.Sprint(a...)))
+		lg.log(FATAL, makeField("messsage", s))
 	}
 }
 
@@ -242,9 +253,9 @@ func (lg *Logger) Fatalf(s string, a ...any) {
 }
 
 // Critical logs default formatting objects with CRITICAL level.
-func (lg *Logger) Critical(a ...any) {
+func (lg *Logger) Critical(s string) {
 	if lg.isEnabledFor(CRITICAL) {
-		lg.log(CRITICAL, makeField("messsage", fmt.Sprint(a...)))
+		lg.log(CRITICAL, makeField("messsage", s))
 	}
 }
 
@@ -256,10 +267,10 @@ func (lg *Logger) Criticalf(s string, a ...any) {
 }
 
 // Log logs default formatting objects with a custom level.
-func (lg *Logger) Log(level int, a ...any) {
+func (lg *Logger) Log(level int, s string) {
 	level = CheckLevel(level)
 	if lg.isEnabledFor(level) {
-		lg.log(level, makeField("messsage", fmt.Sprint(a...)))
+		lg.log(level, makeField("messsage", s))
 	}
 }
 
@@ -297,11 +308,6 @@ func (lg *Logger) log(level int, fields ...field) {
 	fields = append(fields, lg.fields...)
 	var record = makeRecord(lg.name, level, lg.extra, fields...)
 
-	lg.handle(record)
-}
-
-// handle calls the handlers for the specified record.
-func (lg *Logger) handle(record LogRecord) {
 	if lg.filter(record) {
 		lg.callHandlers(record)
 	}

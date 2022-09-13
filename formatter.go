@@ -2,7 +2,6 @@ package xylog
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/xybor-x/xyerror"
 	"github.com/xybor-x/xylog/encoding"
@@ -14,22 +13,22 @@ import (
 // for converting a LogRecord to a string which can be interpreted by either a
 // human or an external system.
 type Formatter interface {
-	Format(LogRecord) (string, error)
+	Format(LogRecord) ([]byte, error)
 	AddMacro(string, string) Formatter
 	AddField(string, any) Formatter
 }
 
 // TextFormatter formats the logging message with the form of key=value.
 type TextFormatter struct {
-	macros []macroField
-	fixed  *encoding.Buffer
+	macros  []macroField
+	encoder *encoding.TextEncoder
 }
 
 // NewTextFormatter creates an empty TextFormatter.
 func NewTextFormatter() *TextFormatter {
 	return &TextFormatter{
-		macros: make([]macroField, 0, 10),
-		fixed:  encoding.NewBuffer(),
+		macros:  make([]macroField, 0, 10),
+		encoder: encoding.NewTextEncoder(),
 	}
 }
 
@@ -41,38 +40,29 @@ func (tf *TextFormatter) AddMacro(name, macro string) Formatter {
 
 // AddField adds a fixed field to logging message. It returns itself.
 func (tf *TextFormatter) AddField(name string, value any) Formatter {
-	tf.fixed.AppendSeperator()
-	tf.fixed.AppendString(name)
-	tf.fixed.AppendByte('=')
-	tf.fixed.AppendQuotedString(fmt.Sprint(value))
+	tf.encoder.Add(name, value)
 	return tf
 }
 
 // Format creates the logging message with the form of key=value.
-func (tf TextFormatter) Format(record LogRecord) (string, error) {
-	var buf = tf.fixed.Clone()
-	defer buf.Free()
+func (tf TextFormatter) Format(record LogRecord) ([]byte, error) {
+	var encoder = tf.encoder.Clone()
+	defer encoder.Free()
 
 	for _, m := range tf.macros {
 		var attr, err = record.getValue(m.macro)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 
-		buf.AppendSeperator()
-		buf.AppendString(m.key)
-		buf.AppendByte('=')
-		buf.AppendQuotedString(fmt.Sprint(attr))
+		encoder.Add(m.key, attr)
 	}
 
 	for _, f := range record.Fields {
-		buf.AppendSeperator()
-		buf.AppendString(f.key)
-		buf.AppendByte('=')
-		buf.AppendQuotedString(fmt.Sprint(f.value))
+		encoder.Add(f.key, f.value)
 	}
 
-	return buf.String(), nil
+	return encoder.Encode(), nil
 }
 
 // JSONFormatter allows logging message to be parsed as json format.
@@ -103,7 +93,7 @@ func (js *JSONFormatter) AddField(name string, value any) Formatter {
 }
 
 // Format creates the logging message of JSON format.
-func (js JSONFormatter) Format(record LogRecord) (string, error) {
+func (js JSONFormatter) Format(record LogRecord) ([]byte, error) {
 	// Copy the predefined fields to the new map.
 	var data = make(map[string]any)
 	for k, v := range js.fields {
@@ -113,7 +103,7 @@ func (js JSONFormatter) Format(record LogRecord) (string, error) {
 	for _, m := range js.macros {
 		var attr, err = record.getValue(m.macro)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 		data[m.key] = attr
 	}
@@ -124,7 +114,7 @@ func (js JSONFormatter) Format(record LogRecord) (string, error) {
 
 	var s, err = json.Marshal(data)
 	if err != nil {
-		return "", xyerror.ValueError.New(err)
+		return nil, xyerror.ValueError.New(err)
 	}
-	return string(s), nil
+	return s, nil
 }

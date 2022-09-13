@@ -62,7 +62,7 @@ func ExampleEventLogger() {
 	logger.Event("create").Field("product", 1235).Debug()
 
 	// Output:
-	// event="create" product="1235"
+	// event=create product=1235
 }
 
 func ExampleJSONFormatter() {
@@ -100,7 +100,7 @@ func ExampleTextFormatter() {
 	logger.Event("create").Field("employee", "david").Debug()
 
 	// Output:
-	// module="example.TextFormatter" level="DEBUG" event="create" employee="david"
+	// module=example.TextFormatter level=DEBUG event=create employee=david
 }
 
 func ExampleFilter() {

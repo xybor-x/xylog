@@ -117,7 +117,7 @@ number, function name, etc).
 | `process`         | Process ID.                                                                                             |
 | `relativeCreated` | Time in milliseconds between the time LogRecord was created and the time the logging module was loaded. |
 
-*\* These are macros that are only available if `xylog.SetFindCaller` is called with true.*
+_\* These are macros that are only available if `xylog.SetFindCaller` is called with true._
 
 ## Filter
 
@@ -138,12 +138,12 @@ CPU: AMD Ryzen 7 5800H (3.2GHz)
 | GetRandomLogger   |       317ns |  0 allocs/op |
 | GetSameHandler    |         5ns |  0 allocs/op |
 | GetRandomHandler  |        97ns |  0 allocs/op |
-| TextFormatter     |       937ns | 13 allocs/op |
-| JSONFormatter     |      4986ns | 40 allocs/op |
-| LogDisable        |        64ns |  1 allocs/op |
-| LogWithoutHandler |       277ns |  5 allocs/op |
-| LogTextFormatter  |      2335ns | 45 allocs/op |
-| LogJSONFormatter  |      4159ns | 69 allocs/op |
+| TextFormatter     |       429ns |  7 allocs/op |
+| JSONFormatter     |      4649ns | 39 allocs/op |
+| LogDisable        |        43ns |  0 allocs/op |
+| LogWithoutHandler |       239ns |  3 allocs/op |
+| LogTextFormatter  |       611ns | 14 allocs/op |
+| LogJSONFormatter  |      2639ns | 49 allocs/op |
 
 # Example
 

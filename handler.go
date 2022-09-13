@@ -113,8 +113,8 @@ func (h *Handler) handle(record LogRecord) {
 	if h.filter(record) && record.LevelNo >= h.Level() {
 		var msg, err = h.Formatter().Format(record)
 		if err != nil {
-			msg = fmt.Sprintf(
-				"An error occurred while formatting the message (%s)", err)
+			msg = []byte(fmt.Sprintf(
+				"An error occurred while formatting the message (%s)", err))
 		}
 		var emitters = h.Emitters()
 		for i := range emitters {
