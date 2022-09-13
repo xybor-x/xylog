@@ -22,7 +22,7 @@ func TestLoggerLogMethods(t *testing.T) {
 	test.WithLogger(t, func(logger *xylog.Logger, w *test.MockWriter) {
 		var tests = []struct {
 			methodf func(string, ...any)
-			method  func(...any)
+			method  func(string)
 		}{
 			{logger.Debugf, logger.Debug},
 			{logger.Infof, logger.Info},
@@ -126,19 +126,19 @@ func TestLoggerLogInvalidJSON(t *testing.T) {
 func TestLoggerAddExtraMacro(t *testing.T) {
 	test.WithLogger(t, func(logger *xylog.Logger, w *test.MockWriter) {
 		var formatter = xylog.NewTextFormatter().AddMacro("foo", "custom")
-		logger.AddExtraMacro("custom", "this-is-a-custom-field")
+		logger.AddExtraMacro("custom", "this is a custom field")
 		logger.Handlers()[0].SetFormatter(formatter)
 		logger.Event("test").Error()
-		xycond.ExpectIn(`foo="this-is-a-custom-field" event="test"`,
+		xycond.ExpectIn(`foo="this is a custom field" event=test`,
 			w.Captured).Test(t)
 	})
 }
 
 func TestLoggerAddField(t *testing.T) {
 	test.WithLogger(t, func(logger *xylog.Logger, w *test.MockWriter) {
-		logger.AddField("custom", "this-is-a-custom-field")
+		logger.AddField("custom", "this is a custom field")
 		logger.Event("test").Error()
-		xycond.ExpectIn(`event="test" custom="this-is-a-custom-field"`,
+		xycond.ExpectIn(`event=test custom="this is a custom field"`,
 			w.Captured).Test(t)
 	})
 }

@@ -13,7 +13,7 @@ func TestJSONFormatterWithoutFields(t *testing.T) {
 	var f = xylog.NewJSONFormatter()
 	var s, err = f.Format(xylog.LogRecord{})
 	xycond.ExpectNil(err).Test(t)
-	xycond.ExpectEqual(s, `{}`).Test(t)
+	xycond.ExpectEqual(string(s), `{}`).Test(t)
 }
 
 func TestJSONFormatterWithInvalidField(t *testing.T) {
@@ -42,10 +42,10 @@ func TestJSONFormatter(t *testing.T) {
 	var s, err = formatter.Format(test.FullRecord)
 
 	xycond.ExpectNil(err).Test(t)
-	xycond.ExpectEqual(s, `{"asctime":"ASCTIME","created":1,"filename":`+
-		`"FILENAME","funcname":"FUNCNAME","levelname":"LEVELNAME","levelno":2,`+
-		`"lineno":3,"module":"MODULE","msecs":4,"pathname":"PATHNAME",`+
-		`"process":5,"relativeCreated":6}`).Test(t)
+	xycond.ExpectEqual(string(s), `{"asctime":"ASCTIME","created":1,`+
+		`"filename":"FILENAME","funcname":"FUNCNAME","levelname":"LEVELNAME",`+
+		`"levelno":2,"lineno":3,"module":"MODULE","msecs":4,"pathname":`+
+		`"PATHNAME","process":5,"relativeCreated":6}`).Test(t)
 }
 
 func TestStructureFormatter(t *testing.T) {
@@ -53,8 +53,8 @@ func TestStructureFormatter(t *testing.T) {
 	var s, err = formatter.Format(test.FullRecord)
 
 	xycond.ExpectNil(err).Test(t)
-	xycond.ExpectEqual(s, `asctime="ASCTIME" created="1" filename="FILENAME" `+
-		`funcname="FUNCNAME" levelname="LEVELNAME" levelno="2" lineno="3" `+
-		`module="MODULE" msecs="4" pathname="PATHNAME" process="5" `+
-		`relativeCreated="6"`).Test(t)
+	xycond.ExpectEqual(string(s), `asctime=ASCTIME created=1 filename=`+
+		`FILENAME funcname=FUNCNAME levelname=LEVELNAME levelno=2 lineno=3 `+
+		`module=MODULE msecs=4 pathname=PATHNAME process=5 relativeCreated=6`).
+		Test(t)
 }

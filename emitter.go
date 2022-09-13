@@ -19,7 +19,7 @@ type LogWriter interface {
 // Emitter instances dispatch logging events to specific destinations.
 type Emitter interface {
 	// Emit will be called after a record was decided to log.
-	Emit(string)
+	Emit([]byte)
 
 	// Flush writes unflushed buffered data to destination, then closes the
 	// Emitter.
@@ -45,7 +45,7 @@ func NewStreamEmitter(w LogWriter) *StreamEmitter {
 }
 
 // Emit will be called after a record was decided to log.
-func (e *StreamEmitter) Emit(msg string) {
+func (e *StreamEmitter) Emit(msg []byte) {
 	e.lock.Lock()
 	defer e.lock.Unlock()
 
@@ -53,7 +53,10 @@ func (e *StreamEmitter) Emit(msg string) {
 		return
 	}
 
-	var _, err = e.stream.WriteString(msg + "\n")
+	var _, err = e.stream.Write(msg)
+	if err == nil {
+		_, err = e.stream.WriteRune('\n')
+	}
 	if err != nil {
 		fmt.Println("------------ Logging error ------------")
 		fmt.Printf("An error occurs when logging: %v\n", err)

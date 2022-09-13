@@ -18,23 +18,25 @@ func TestNewStreamEmitterWithNil(t *testing.T) {
 func TestStreamEmitterEmit(t *testing.T) {
 	test.WithStreamEmitter(t, func(e *xylog.StreamEmitter, w *test.MockWriter) {
 		var msg = test.GetRandomMessage()
-		e.Emit(msg)
+		e.Emit([]byte(msg))
 		xycond.ExpectIn(msg, w.Captured).Test(t)
 	})
 }
 
 func TestStreamEmitterEmitError(t *testing.T) {
 	test.WithStreamEmitter(t, func(e *xylog.StreamEmitter, w *test.MockWriter) {
+		var msg = test.GetRandomMessage()
 		w.Error = true
-		e.Emit(test.GetRandomMessage())
+		e.Emit([]byte(msg))
 		xycond.ExpectEmpty(w.Captured).Test(t)
 	})
 }
 
 func TestStreamEmitterClose(t *testing.T) {
 	test.WithStreamEmitter(t, func(e *xylog.StreamEmitter, w *test.MockWriter) {
+		var msg = test.GetRandomMessage()
 		e.Close()
-		e.Emit(test.GetRandomMessage())
+		e.Emit([]byte(msg))
 		xycond.ExpectEmpty(w.Captured).Test(t)
 	})
 }

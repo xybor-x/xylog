@@ -15,7 +15,11 @@ func WithLogger(t *testing.T, f func(logger *xylog.Logger, w *MockWriter)) {
 	var emitter = xylog.NewStreamEmitter(writer)
 	var handler = xylog.GetHandler("")
 	handler.AddEmitter(emitter)
+
 	var logger = xylog.GetLogger(t.Name())
+	// Sometimes the testing runs multiple times and this logger will add more
+	// than one handler.
+	logger.RemoveAllHandlers()
 	logger.AddHandler(handler)
 
 	f(logger, writer)
@@ -44,6 +48,9 @@ func WithBenchLogger(b *testing.B, f func(logger *xylog.Logger)) {
 	handler.AddEmitter(emitter)
 
 	var logger = xylog.GetLogger(b.Name())
+	// Sometimes the testing runs multiple times and this logger will add more
+	// than one handler.
+	logger.RemoveAllHandlers()
 	logger.AddHandler(handler)
 
 	f(logger)
