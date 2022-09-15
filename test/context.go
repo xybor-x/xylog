@@ -25,6 +25,18 @@ func WithLogger(t *testing.T, f func(logger *xylog.Logger, w *MockWriter)) {
 	f(logger, writer)
 }
 
+// WithHandler allows to use a Handler with MockWriter.
+func WithHandler(t *testing.T, f func(h *xylog.Handler, w *MockWriter)) {
+	xylog.SetBufferSize(1)
+	defer xylog.SetBufferSize(4096)
+	var writer = &MockWriter{}
+	var emitter = xylog.NewStreamEmitter(writer)
+	var handler = xylog.GetHandler(t.Name())
+	handler.AddEmitter(emitter)
+
+	f(handler, writer)
+}
+
 // WithStreamEmitter allows to use a StreamEmitter created with a MockWriter
 // quickly.
 func WithStreamEmitter(

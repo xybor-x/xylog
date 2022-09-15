@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/xybor-x/xylog"
+	"github.com/xybor-x/xylog/encoding"
 	"github.com/xybor-x/xylog/test"
 )
 
@@ -22,7 +23,7 @@ func BenchmarkLoggerDisable(b *testing.B) {
 
 func BenchmarkLoggerWithoutHandler(b *testing.B) {
 	test.WithBenchLogger(b, func(logger *xylog.Logger) {
-		logger.RemoveHandler(logger.Handlers()[0])
+		logger.RemoveAllHandlers()
 		logger.SetLevel(xylog.DEBUG)
 		b.RunParallel(func(p *testing.PB) {
 			for p.Next() {
@@ -32,10 +33,10 @@ func BenchmarkLoggerWithoutHandler(b *testing.B) {
 	})
 }
 
-func BenchmarkLoggerTextFormatter(b *testing.B) {
+func BenchmarkLoggerTextEncoding(b *testing.B) {
 	test.WithBenchLogger(b, func(logger *xylog.Logger) {
-		var formatter = test.AddFullMacros(xylog.NewTextFormatter())
-		logger.Handlers()[0].SetFormatter(formatter)
+		test.AddFullMacros(logger.Handlers()[0])
+		logger.Handlers()[0].SetEncoding(encoding.NewTextEncoding())
 		logger.SetLevel(xylog.DEBUG)
 		b.RunParallel(func(p *testing.PB) {
 			for p.Next() {
@@ -45,10 +46,10 @@ func BenchmarkLoggerTextFormatter(b *testing.B) {
 	})
 }
 
-func BenchmarkLoggerJSONFormatter(b *testing.B) {
+func BenchmarkLoggerJSONEncoding(b *testing.B) {
 	test.WithBenchLogger(b, func(logger *xylog.Logger) {
-		var formatter = test.AddFullMacros(xylog.NewJSONFormatter())
-		logger.Handlers()[0].SetFormatter(formatter)
+		test.AddFullMacros(logger.Handlers()[0])
+		logger.Handlers()[0].SetEncoding(encoding.NewJSONEncoding())
 		logger.SetLevel(xylog.DEBUG)
 		b.RunParallel(func(p *testing.PB) {
 			for p.Next() {

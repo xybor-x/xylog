@@ -12,7 +12,8 @@ import (
 func TestConfigSet(t *testing.T) {
 	xylog.SetBufferSize(4096)
 	xylog.SetTimeLayout(time.RFC3339Nano)
-	xylog.SetSkipCall(2)
+	xylog.SetSkipCall(3)
+	xylog.SetFindCaller(false)
 }
 
 func TestLevel(t *testing.T) {

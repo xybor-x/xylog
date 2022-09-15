@@ -10,56 +10,104 @@
 
 # Introduction
 
-Package xylog is a logging module based on the design of python logging
+Package xylog is designated for [structured logging](#structured-logging), [high performance](#benchmark), and
+readable syntax.
 
-# Feature
+The library is combined by
+[python logging](https://docs.python.org/3/library/logging.html) design and
+[zap](https://github.com/uber-go/zap) encoding approach.
 
-The basic structs defined by the module, together with their functions, are
-listed below:
+# Quick start
 
-1.  `Logger` is directly used by application code. It creates `LogRecord` and
-    sends to `Handlers`.
-2.  `Handler` converts `LogRecord` (created by `Logger`) to logging messages and
-    sends to `Emitters`.
-3.  `Emitter` writes logging messages (created by `Handler`) to appropriate
-    destination.
-4.  `Filter` is used by `Logger` and `Handler` to determine which `LogRecord`
-    should be logged.
-5.  `Formatter` is used by `Handler` to specify how a `LogRecord` is converted
-    to the logging message.
+`Logger` is directly used by application code. `Logger` names are dot-separated
+hierarchical names, such as "a", "a.b", "a.b.c" or similar. For "a.b.c", its
+parents are "a" and "a.b".
 
-## Logger
+A `Logger` is obtained by `GetLogger` method. If the `Logger` with that name
+hasn't existed before, the method will create a new one.
 
-`Logger` should NEVER be instantiated directly. Instead, it will be created
-through the function `GetLogger(name)`. Multiple calls to `GetLogger()` with the
-same name will always return the same `Logger` object.
+```golang
+var logger = xylog.GetLogger("example")
+defer logger.Flush()
+```
 
-`Logger` names are dot-separated hierarchical names, such as "a", "a.b", "a.b.c"
-or similar. For "a.b.c", its parents are "a" and "a.b".
+`Handler` is responsible for creating the logging message. Like `Logger`,
+`Handler` is also determined by its name, however, the name is not hierarchical.
+Every call of `GetHandler` with the same name will give the same `Handler`.
 
-When a `LogRecord` is decided to log by a `Logger`, it will be handled by all
-`Handlers` of the `Logger` itself and `Logger`'s parents.
+_Exception: `Handlers` with the empty name are always different._
 
-### EventLogger
+```golang
+var handler = xylog.GetHandler("handler")
+```
 
-`EventLogger` is a `Logger` wrapper supporting to compose logging message by
-key-value fields.
+`Emitter` writes logging message to the specified output. Currently, only the
+`StreamEmitter` is supported. You can use any \``in this`Emitter\`.
+Writer
 
-Use `Event` method of `Logger` to create an `EventLogger`. You must create a
-unique `EventLogger` each time you want to log.
+```golang
+var emitter = xylog.NewStreamEmitter(os.Stdout)
+```
 
-If you call `Logger.AddField`, every `EventLogger` created by that `Logger`
-always contains the added fields without adding again.
+When a logging method is called, the `Logger` creates a `LogRecord` and sends it
+to underlying `Handlers`. `Handlers` converts `LogRecord` to text and sends it
+to `Emitters`.
 
-`EventLogger` provides structured format (default) and JSON format for logging
+```golang
+handler.AddEmitter(emitter)
+logger.AddHandler(handler)
+```
+
+After preparing `Logger`, `Handler`, and `Emitter`, you can log the first
 message.
 
-## Logging level
+```golang
+logger.Debug("foo") // This message is blocked by Logger preferred level.
+logger.Warning("bar")
 
-The numeric values of logging levels are given in the following table. These are
-primarily of interest if you want to define your own levels, and need them to
-have specific values relative to the predefined levels. If you define a level
-with the same numeric value, it overwrites the predefined value.
+// Output:
+// message=bar
+```
+
+# Logging level
+
+Both `Logger` and `Handler` has its own preferred level. If a logging level is
+lower than the preferred one, the message will not be logged.
+
+By default:
+
+-   `Handler` logs all logging level.
+-   `Logger`'s preferred level depends on its parents.
+
+You can set the new preferred level of `Logger` and `Handler`.
+
+```golang
+logger.SetLevel(xylog.DEBUG)
+
+logger.Debug("foo")
+logger.Warning("bar")
+
+// Output:
+// message=foo
+// message=bar
+```
+
+In the following example, however, the first message with DEBUG can bypass the
+`Logger`, but will be prevented by `Handler`.
+
+```golang
+logger.SetLevel(xylog.DEBUG)
+handler.SetLevel(xylog.INFO)
+
+logger.Debug("foo")
+logger.Warning("bar")
+
+// Output:
+// message=bar
+```
+
+The numeric values of logging levels are given in the following table. If you
+define a level with the same numeric value, it overwrites the predefined value.
 
 | Level        | Numeric value |
 | ------------ | ------------- |
@@ -70,36 +118,67 @@ with the same numeric value, it overwrites the predefined value.
 | DEBUG        | 10            |
 | NOTSET       | 0             |
 
-## Handler
+# Structured logging
 
-`Handler` handles `LogRecord` and converts it to logging message.
+If the logging message has more than one field, `EventLogger` can help.
 
-Like `Logger`, `Handler` can also be determined by its name. But the name is not
-hierarchical.
+```golang
+logger.Event("add-user").Field("name", "david").Field("email", "david@dad.com").Info()
 
-To get an `Handler`, call `GetHandler` with its name. If the `Handler` doesn't
-yet existed, create a new one. Many calls to `GetHandler` with the same name
-will always give the same `Handler`. An exception is empty name which represents
-for anonymous `Handlers`.
+// Output:
+// event=add-user name=david email=david@dad.com
+```
 
-## Emitter
+You also add a field to `Logger` or `Handler` permanently. All logging messages
+will always include permanent fields.
 
-`Emitter` writes log messages to specified destination.
+```golang
+logger.AddField("host", "localhost")
+handler.AddField("port", 3333)
 
-Currently only `StreamEmitter` is supported.
+logger.Info("start server")
 
-## Formatter
+// Output:
+// host=localhost port=3333 message="start server"
+```
 
-`Formatter` converts a `LogRecord` to text.
+_NOTE: Fixed fields added to `Handler` will log faster than the oneadded to `Logger`_
 
-Attributes of `LogRecord` are called macros. Macros' values are filled when the
-`LogRecord` is created by the `Logger`. Using macros is the easy way to
-construct a logging message with dynamic and complex values (such as time, line
-number, function name, etc).
+`Handler` can support different encoding types. By default, it is
+`TextEncoding`.
 
-`TextFormatter` allows to create a logging message with format of `key=value`.
+You can log the message with JSON format too.
 
-`JSONFormatter` allows to create a logging message of JSON format.
+```golang
+import "github.com/xybor-x/xylog/encoding"
+
+handler.SetEncoding(encoding.NewJSONEncoding())
+
+logger.Warning("this is a message")
+logger.Event("failed").Field("id", 1).Error()
+
+// Output:
+// {"message":"this is a message"}
+// {"event":"failed","id": 1}
+```
+
+# Macros
+
+You can log special fields whose values change every time you log. These fields
+called macros.
+
+Only the `Handler` can add macros.
+
+```golang
+handler.AddMacro("level", "levelname")
+
+logger.Warning("this is a warning message")
+
+// Output:
+// level=WARNING message="this is a warning message"
+```
+
+The following table shows supported macros.
 
 | MACRO             | DESCRIPTION                                                                                             |
 | ----------------- | ------------------------------------------------------------------------------------------------------- |
@@ -117,9 +196,9 @@ number, function name, etc).
 | `process`         | Process ID.                                                                                             |
 | `relativeCreated` | Time in milliseconds between the time LogRecord was created and the time the logging module was loaded. |
 
-_\* These are macros that are only available if `xylog.SetFindCaller` is called with true._
+_\* These are macros that are only available if `xylog.SetFindCaller` is called with `true`._
 
-## Filter
+# Filter
 
 `Filter` instances are used to perform arbitrary filtering of `LogRecord`.
 
@@ -128,90 +207,90 @@ if it allows to log the `LogRecord`, and vice versa.
 
 `Filter` can be used in both `Handler` and `Logger`.
 
-# Benchmark
-
-CPU: AMD Ryzen 7 5800H (3.2GHz)
-
-| op name           | time per op |   allocation |
-| ----------------- | ----------: | -----------: |
-| GetSameLogger     |       107ns |  1 allocs/op |
-| GetRandomLogger   |       317ns |  0 allocs/op |
-| GetSameHandler    |         5ns |  0 allocs/op |
-| GetRandomHandler  |        97ns |  0 allocs/op |
-| TextFormatter     |       429ns |  7 allocs/op |
-| JSONFormatter     |      4649ns | 39 allocs/op |
-| LogDisable        |        43ns |  0 allocs/op |
-| LogWithoutHandler |       239ns |  3 allocs/op |
-| LogTextFormatter  |       611ns | 14 allocs/op |
-| LogJSONFormatter  |      2639ns | 49 allocs/op |
-
-# Example
-
-See more examples [here](./example_test.go).
-
-## Simple
-
 ```golang
-var emitter = xylog.NewStreamEmitter(os.Stdout)
-var formatter = xylog.NewTextFormmater().AddMacro("level", "levelname")
-var handler = xylog.GetHandler("")
-handler.AddEmitter(emitter)
-handler.SetFormatter(formatter)
+type NameFilter struct {
+    name string
+}
 
-var logger = xylog.GetLogger("example.simple")
-logger.AddHandler(handler)
-logger.SetLevel(xylog.DEBUG)
+func (f *NameFilter) Filter(record xylog.LogRecord) bool {
+    return f.name == record.Name
+}
 
-logger.Warning("foo")
+handler.AddFilter(&NameFilter{"example.user"})
+
+var userLogger = xylog.GetLogger("example.user")
+var serviceLogger = xylog.GetLogger("example.service")
+
+userLogger.Warning("this is the user logger")
+serviceLogger.Warning("this is the service logger")
 
 // Output:
-// level=WARNING message=foo
+// message="this is the user logger"
 ```
 
-## Advanced
+# Hierarchical logger
+
+As the first section mentioned, the `Logger`'s name is hierarchical. With this
+feature, you can setup a common `Logger` with a specified configuration and uses
+in different application zones.
 
 ```golang
-// setup.go
-var w, err = os.Open("example.log")
-if err != nil {
-    panic(err)
+// common/setup.go
+func init() {
+    var emitter = xylog.NewStreamEmitter(os.Stderr)
+    var handler = xylog.GetHandler("")
+    handler.AddEmitter(emitter)
+    handler.SetEncoding(encoding.NewJSONEncoding())
+    handler.AddMacro("time", "asctime")
+    handler.AddMacro("level", "levelname")
+
+    var logger = xylog.GetLogger("parent")
+    logger.AddHandler(handler)
+    logger.SetLevel(xylog.WARNING)
 }
-var emitter = xylog.NewStreamEmitter(w)
-var formatter = xylog.NewTextFormatter().
-    AddMacro("time", "asctime").
-    AddMacro("level", "levelname").
-    AddMacro("module", "name")
-
-var handler = xylog.GetHandler("advanced")
-handler.AddEmitter(emitter)
-handler.SetFormatter(formatter)
-handler.SetLevel(xylog.DEBUG)
-
-var logger = xylog.GetLogger("example.advanced")
-logger.AddHandler(handler)
-logger.SetLevel(xylog.WARNING)
 ```
 
 ```golang
-// user.go
-var userLogger = xylog.GetLogger("example.advanced.user")
-userLogger.SetLevel(xylog.DEBUG)
-userLogger.AddField("host", "localhost:3333")
+// user/foo.go
+import _ "common"
 
-logger.Event("create-user").Field("user_id", 5).Field("name", "bar").Debug()
-logger.Event("delete-user").Field("user_id", 5).Warning()
+var logger = xylog.GetLogger("parent.user")
+defer logger.Flush()
+logger.SetLevel(xylog.INFO)
+logger.AddField("module", "user")
 
-// example.log:
-// time=[time] level=DEBUG module=example.advanced.user host=localhost:3333 event=create-user user_id=5 name=bar
+logger.Info("this is user module")
+logger.Debug("this is a not logged message")
+
+// Output:
+// time=[time] level=INFO module=user message="this is user module"
 ```
 
 ```golang
-// record.go
-var recordLogger = xylog.GetLogger("example.advanced.record")
+// service/bar.go
+import _ "common"
 
-recordLogger.Event("add-record").Debug()
-recordLogger.Event("add-record-failed").Error()
+var logger = xylog.GetLogger("parent.service")
+defer logger.Flush()
+logger.AddField("module", "service")
+logger.AddField("service", "bar")
 
-// example.log:
-// time=[time] level=ERROR module=example.advanced.record event=add-record-failed
+logger.Warning("this is service module")
+
+// Output:
+// time=[time] level=INFO module=service service=bar message="this is service module"
 ```
+
+# Benchmark
+
+CPU: AMD Ryzen 7 5800H (3.2Ghz)
+
+These following benchmarks are measured with all [macros](#macros) and
+`SetFindCaller` is called with `false`.
+
+| op             | time per op | alloc per op |
+| -------------- | ----------: | -----------: |
+| Disable        |        51ns |  0 allocs/op |
+| WithoutHandler |       247ns |  3 allocs/op |
+| TextEncoding   |       653ns | 14 allocs/op |
+| JSONEncoding   |       631ns | 14 allocs/op |

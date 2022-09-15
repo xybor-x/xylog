@@ -22,9 +22,6 @@ type LogRecord struct {
 	// Time when the LogRecord was created (time.Now().Unix() return value).
 	Created int64
 
-	// This is not a macro. Extra provides possibility of using custom macros.
-	Extra map[string]any
-
 	// This a not a macro. Fields are always added to the logging message
 	// without calling AddMacro.
 	Fields []field
@@ -95,16 +92,12 @@ func (r LogRecord) getValue(name string) (any, error) {
 	case "relativeCreated":
 		return r.RelativeCreated, nil
 	default:
-		if attr, ok := r.Extra[name]; ok {
-			return attr, nil
-		}
 		return nil, xyerror.ValueError.Newf("not found attribute %s", name)
 	}
 }
 
 // makeRecord creates specialized LogRecords.
-func makeRecord(name string, level int, extra map[string]any, fields ...field,
-) LogRecord {
+func makeRecord(name string, level int, fields ...field) LogRecord {
 	var created = time.Now()
 	var pc uintptr
 	var lineno int
@@ -123,7 +116,6 @@ func makeRecord(name string, level int, extra map[string]any, fields ...field,
 	return LogRecord{
 		Asctime:         created.Format(timeLayout),
 		Created:         created.Unix(),
-		Extra:           extra,
 		Fields:          fields,
 		FileName:        filepath.Base(pathname),
 		FuncName:        funcname,

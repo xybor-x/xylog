@@ -1,12 +1,12 @@
 package xylog_test
 
 import (
-	"fmt"
 	"os"
 	"testing"
 
 	"github.com/xybor-x/xycond"
 	"github.com/xybor-x/xylog"
+	"github.com/xybor-x/xylog/encoding"
 	"github.com/xybor-x/xylog/test"
 )
 
@@ -28,13 +28,6 @@ func TestGetHandlerWithEmptyName(t *testing.T) {
 	var handlerA = xylog.GetHandler("")
 	var handlerB = xylog.GetHandler("")
 	xycond.ExpectNotEqual(handlerA, handlerB).Test(t)
-}
-
-func TestHandlerSetFormatter(t *testing.T) {
-	var handler = xylog.GetHandler("")
-	var formatter = xylog.NewTextFormatter()
-	handler.SetFormatter(formatter)
-	xycond.ExpectEqual(fmt.Sprint(handler.Formatter()), fmt.Sprint(formatter))
 }
 
 func TestHandlerSetLevel(t *testing.T) {
@@ -63,4 +56,39 @@ func TestHandlerEmitters(t *testing.T) {
 
 	handler.RemoveEmitter(emitter)
 	xycond.ExpectEqual(len(handler.Emitters()), 0).Test(t)
+}
+
+func TestHandlerSetEncodingAfterAddField(t *testing.T) {
+	test.WithHandler(t, func(h *xylog.Handler, w *test.MockWriter) {
+		h.AddField("foo", "bar")
+		h.AddField("name", "value")
+		h.SetEncoding(encoding.NewJSONEncoding())
+		h.Handle(xylog.LogRecord{})
+
+		xycond.ExpectIn(`{"foo":"bar","name":"value"}`, w.Captured).Test(t)
+	})
+}
+
+func TestHandlerInvalidMacro(t *testing.T) {
+	test.WithHandler(t, func(h *xylog.Handler, w *test.MockWriter) {
+		h.AddMacro("foo", "unknown")
+		h.Handle(xylog.LogRecord{})
+
+		xycond.ExpectIn("An error occurred while formatting the message",
+			w.Captured).Test(t)
+	})
+}
+
+func TestHandlerFullMacro(t *testing.T) {
+
+	test.WithHandler(t, func(h *xylog.Handler, w *test.MockWriter) {
+		test.AddFullMacros(h)
+
+		h.Handle(test.FullRecord)
+
+		xycond.ExpectEqual("asctime=ASCTIME created=1 filename=FILENAME "+
+			"funcname=FUNCNAME levelname=LEVELNAME levelno=2 lineno=3 "+
+			"module=MODULE msecs=4 pathname=PATHNAME process=5 "+
+			"relativeCreated=6", w.Captured).Test(t)
+	})
 }

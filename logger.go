@@ -30,7 +30,6 @@ type Logger struct {
 	handlers []*Handler
 	lock     *xylock.RWLock
 	cache    map[int]bool
-	extra    map[string]any
 	fields   []field
 }
 
@@ -50,7 +49,7 @@ func GetLogger(name string) *Logger {
 	var lg = rootLogger
 	for _, part := range strings.Split(name, ".") {
 		if _, ok := lg.children[part]; !ok {
-			lg.children[part] = newlogger(part, lg)
+			lg.children[part] = newLogger(part, lg)
 		}
 		lg = lg.children[part]
 	}
@@ -108,7 +107,7 @@ func (lg *Logger) AddHandler(h *Handler) {
 	lg.lock.WLockFunc(func() { lg.handlers = append(lg.handlers, h) })
 }
 
-// RemoveHandler remove an existed Handler.
+// RemoveHandler removes an existed Handler.
 func (lg *Logger) RemoveHandler(h *Handler) {
 	lg.lock.Lock()
 	defer lg.lock.Unlock()
@@ -139,17 +138,12 @@ func (lg *Logger) AddFilter(f Filter) {
 	lg.lock.WLockFunc(func() { lg.f.AddFilter(f) })
 }
 
-// RemoveFilter remove an existed Filter.
+// RemoveFilter removes an existed Filter.
 func (lg *Logger) RemoveFilter(f Filter) {
 	lg.lock.Lock()
 	defer lg.lock.Unlock()
 
 	lg.f.RemoveFilter(f)
-}
-
-// AddExtraMacro adds a custom macro to logging format.
-func (lg *Logger) AddExtraMacro(key string, value any) {
-	lg.lock.WLockFunc(func() { lg.extra[key] = value })
 }
 
 // AddField adds a fixed field to all logging message of this logger.
@@ -282,16 +276,6 @@ func (lg *Logger) Logf(level int, s string, a ...any) {
 	}
 }
 
-// Event creates an EventLogger which logs key-value pairs.
-func (lg *Logger) Event(e string) *EventLogger {
-	var elogger = &EventLogger{
-		lg:     lg,
-		fields: make([]field, 0, 5),
-	}
-	elogger.Field("event", e)
-	return elogger
-}
-
 // Stack logs the stack trace.
 func (lg *Logger) Stack(level int) {
 	var s = string(debug.Stack())
@@ -302,11 +286,21 @@ func (lg *Logger) Stack(level int) {
 	}
 }
 
+// Event creates an EventLogger which logs key-value pairs.
+func (lg *Logger) Event(e string) *EventLogger {
+	var elogger = &EventLogger{
+		lg:     lg,
+		fields: make([]field, 0, 5),
+	}
+	elogger.Field("event", e)
+	return elogger
+}
+
 // log is a low-level logging method which creates a LogRecord and then calls
 // all the handlers of this logger to handle the record.
 func (lg *Logger) log(level int, fields ...field) {
 	fields = append(fields, lg.fields...)
-	var record = makeRecord(lg.name, level, lg.extra, fields...)
+	var record = makeRecord(lg.name, level, fields...)
 
 	if lg.filter(record) {
 		lg.callHandlers(record)
@@ -329,7 +323,7 @@ func (lg *Logger) callHandlers(record LogRecord) {
 	for current != nil {
 		var handlers = current.Handlers()
 		for i := range handlers {
-			handlers[i].handle(record)
+			handlers[i].Handle(record)
 		}
 		current = current.Parent()
 	}
@@ -372,11 +366,11 @@ func (lg *Logger) clearCache() {
 	}
 }
 
-// newlogger creates a new logger with a name and parent. The fullname of logger
+// newLogger creates a Logger with a name and parent. The fullname of logger
 // will be concatenated by the parent's fullname. This logger will not be
 // automatically added to logger hierarchy. The returned logger has no child,
 // no handler, and NOTSET level.
-func newlogger(name string, parent *Logger) *Logger {
+func newLogger(name string, parent *Logger) *Logger {
 	var current = parent
 	if current != nil && current != rootLogger {
 		name = current.Name() + "." + name
@@ -391,6 +385,5 @@ func newlogger(name string, parent *Logger) *Logger {
 		handlers: nil,
 		lock:     &xylock.RWLock{},
 		cache:    make(map[int]bool),
-		extra:    make(map[string]any),
 	}
 }
