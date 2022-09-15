@@ -5,6 +5,7 @@ import (
 
 	"github.com/xybor-x/xycond"
 	"github.com/xybor-x/xylock"
+	"github.com/xybor-x/xylog/encoding"
 )
 
 // Handler handles logging events. Do NOT instantiated directly this struct.
@@ -13,11 +14,13 @@ import (
 type Handler struct {
 	f *filterer
 
-	name      string
-	emitters  []Emitter
-	level     int
-	lock      *xylock.RWLock
-	formatter Formatter
+	name     string
+	emitters []Emitter
+	level    int
+	lock     *xylock.RWLock
+	encoder  *encoding.Encoder
+	macros   []macroField
+	fields   []field
 }
 
 // GetHandler gets a handler with the specified name, creating it if it doesn't
@@ -31,12 +34,11 @@ func GetHandler(name string) *Handler {
 	}
 
 	h = &Handler{
-		f:         &filterer{},
-		name:      name,
-		emitters:  nil,
-		level:     NOTSET,
-		lock:      &xylock.RWLock{},
-		formatter: defaultFormatter,
+		f:       &filterer{},
+		name:    name,
+		level:   NOTSET,
+		lock:    &xylock.RWLock{},
+		encoder: encoding.NewEncoder(encoding.NewTextEncoding()),
 	}
 	if name != "" {
 		mapHandler(name, h)
@@ -60,14 +62,14 @@ func (h *Handler) SetLevel(level int) {
 	h.lock.WLockFunc(func() { h.level = level })
 }
 
-// Formatter returns the current Formatter.
-func (h *Handler) Formatter() Formatter {
-	return h.lock.RLockFunc(func() any { return h.formatter }).(Formatter)
-}
-
-// SetFormatter sets a new Formatter.
-func (h *Handler) SetFormatter(f Formatter) {
-	h.lock.WLockFunc(func() { h.formatter = f })
+// SetEncoding sets a new Encoding.
+func (h *Handler) SetEncoding(e encoding.Encoding) {
+	h.lock.Lock()
+	defer h.lock.Unlock()
+	h.encoder = encoding.NewEncoder(e)
+	for i := range h.fields {
+		h.encoder.Add(h.fields[i].key, h.fields[i].value)
+	}
 }
 
 // Filters returns all current Filters.
@@ -107,11 +109,26 @@ func (h *Handler) RemoveEmitter(e Emitter) {
 	}
 }
 
-// handle checks if a record should be logged or not, then call Emitter if it
+// AddMacro adds the macro value to the logging message under a name.
+func (h *Handler) AddMacro(name, macro string) {
+	h.lock.WLockFunc(func() {
+		h.macros = append(h.macros, macroField{key: name, macro: macro})
+	})
+}
+
+// AddField adds a fixed field to the logging message.
+func (h *Handler) AddField(name string, value any) {
+	h.lock.WLockFunc(func() {
+		h.fields = append(h.fields, makeField(name, value))
+		h.encoder.Add(name, value)
+	})
+}
+
+// Handle checks if a record should be logged or not, then calls Emitters if it
 // is.
-func (h *Handler) handle(record LogRecord) {
+func (h *Handler) Handle(record LogRecord) {
 	if h.filter(record) && record.LevelNo >= h.Level() {
-		var msg, err = h.Formatter().Format(record)
+		var msg, err = h.format(record)
 		if err != nil {
 			msg = []byte(fmt.Sprintf(
 				"An error occurred while formatting the message (%s)", err))
@@ -121,6 +138,26 @@ func (h *Handler) handle(record LogRecord) {
 			emitters[i].Emit(msg)
 		}
 	}
+}
+
+// format creates the logging message based on the encoding.
+func (h Handler) format(record LogRecord) ([]byte, error) {
+	var encoder = h.encoder.Clone()
+	defer encoder.Free()
+
+	for i := range h.macros {
+		var attr, err = record.getValue(h.macros[i].macro)
+		if err != nil {
+			return nil, err
+		}
+		encoder.Add(h.macros[i].key, attr)
+	}
+
+	for _, f := range record.Fields {
+		encoder.Add(f.key, f.value)
+	}
+
+	return encoder.Encode(), nil
 }
 
 // filter checks all Filters, if there is any failed one, it will returns false.

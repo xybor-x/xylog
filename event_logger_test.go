@@ -27,3 +27,10 @@ func TestEventLogger(t *testing.T) {
 		}
 	})
 }
+
+func TestEventLoggerLog(t *testing.T) {
+	test.WithLogger(t, func(logger *xylog.Logger, w *test.MockWriter) {
+		logger.Event("foo").Log(xylog.CRITICAL)
+		xycond.ExpectIn("event=foo", w.Captured).Test(t)
+	})
+}

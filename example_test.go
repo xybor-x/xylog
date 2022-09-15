@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/xybor-x/xylog"
+	"github.com/xybor-x/xylog/encoding"
 	"github.com/xybor-x/xylog/test"
 )
 
@@ -65,14 +66,13 @@ func ExampleEventLogger() {
 	// event=create product=1235
 }
 
-func ExampleJSONFormatter() {
+func ExampleNewJSONEncoding() {
 	var emitter = xylog.NewStreamEmitter(os.Stdout)
-	var formatter = xylog.NewJSONFormatter().
-		AddMacro("module", "name").
-		AddMacro("level", "levelname")
 	var handler = xylog.GetHandler("")
 	handler.AddEmitter(emitter)
-	handler.SetFormatter(formatter)
+	handler.SetEncoding(encoding.NewJSONEncoding())
+	handler.AddMacro("module", "name")
+	handler.AddMacro("level", "levelname")
 
 	var logger = xylog.GetLogger("example.JSONFormatter")
 	defer logger.Flush()
@@ -81,17 +81,16 @@ func ExampleJSONFormatter() {
 	logger.Event("create").Field("product", 1235).Debug()
 
 	// Output:
-	// {"event":"create","level":"DEBUG","module":"example.JSONFormatter","product":1235}
+	// {"module":"example.JSONFormatter","level":"DEBUG","event":"create","product":1235}
 }
 
-func ExampleTextFormatter() {
+func ExampleNewTextEncoding() {
 	var emitter = xylog.NewStreamEmitter(os.Stdout)
-	var formatter = xylog.NewTextFormatter().
-		AddMacro("module", "name").
-		AddMacro("level", "levelname")
 	var handler = xylog.GetHandler("")
 	handler.AddEmitter(emitter)
-	handler.SetFormatter(formatter)
+	handler.SetEncoding(encoding.NewTextEncoding())
+	handler.AddMacro("module", "name")
+	handler.AddMacro("level", "levelname")
 
 	var logger = xylog.GetLogger("example.TextFormatter")
 	defer logger.Flush()

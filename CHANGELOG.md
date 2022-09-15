@@ -12,6 +12,8 @@
     TextFormatter.
 -   EventLogger is adapted with the formatter. EventLogger.JSON is removed.
 -   Remove `message` macro.
+-   Integrate Formatter to Handler and rename it to Encoding.
+-   Use encoding approach of zap.
 
 # v0.1.0 (Sep 04, 2022)
 

@@ -7,19 +7,19 @@ import (
 
 	"github.com/xybor-x/xycond"
 	"github.com/xybor-x/xylock"
+	"github.com/xybor-x/xylog/encoding"
 )
 
 func init() {
-	rootLogger = newlogger("", nil)
+	rootLogger = newLogger("", nil)
 	rootLogger.SetLevel(WARNING)
 
-	var formatter = NewTextFormatter().
-		AddMacro("time", "asctime").
-		AddMacro("level", "levelname").
-		AddField("module", "name")
 	var handler = GetHandler("xybor")
 	handler.AddEmitter(NewStreamEmitter(os.Stderr))
-	handler.SetFormatter(formatter)
+	handler.SetEncoding(encoding.NewTextEncoding())
+	handler.AddMacro("time", "asctime")
+	handler.AddMacro("level", "levelname")
+	handler.AddMacro("module", "name")
 
 	var logger = GetLogger("xybor")
 	logger.SetLevel(WARNING)
@@ -59,9 +59,6 @@ var rootLogger *Logger
 
 // timeLayout is the default time layout used to print asctime when logging.
 var timeLayout = time.RFC3339Nano
-
-// defaultFormatter is the formatter used to initialize handler.
-var defaultFormatter = NewTextFormatter()
 
 // handlerManager is a map to search handler by name.
 var handlerManager = make(map[string]*Handler)
@@ -107,8 +104,8 @@ func SetBufferSize(s int) {
 
 // SetFindCaller with true to find caller information including filename, line
 // number, function name, and module.
-func SetFindCaller() {
-	globalLock.WLockFunc(func() { findCaller = true })
+func SetFindCaller(b bool) {
+	globalLock.WLockFunc(func() { findCaller = b })
 }
 
 // AddLevel associates a log level with name. It can overwrite other log levels.
