@@ -14,6 +14,7 @@
 -   Remove `message` macro.
 -   Integrate Formatter to Handler and rename it to Encoding.
 -   Use encoding approach of zap.
+-   Add benchmark comparison.
 
 # v0.1.0 (Sep 04, 2022)
 

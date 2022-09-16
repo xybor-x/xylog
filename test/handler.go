@@ -22,7 +22,12 @@
 
 package test
 
-import "github.com/xybor-x/xylog"
+import (
+	"errors"
+	"time"
+
+	"github.com/xybor-x/xylog"
+)
 
 // AddFullMacros adds all macros to a Formatter.
 func AddFullMacros(h *xylog.Handler) {
@@ -38,4 +43,60 @@ func AddFullMacros(h *xylog.Handler) {
 	h.AddMacro("pathname", "pathname")
 	h.AddMacro("process", "process")
 	h.AddMacro("relativeCreated", "relativeCreated")
+}
+
+type user struct {
+	Name      string
+	Email     string
+	CreatedAt time.Time
+}
+
+var (
+	errExample = errors.New("fail")
+
+	_tenInts    = []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 0}
+	_tenStrings = []string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j"}
+	_tenTimes   = []time.Time{
+		time.Unix(0, 0),
+		time.Unix(1, 0),
+		time.Unix(2, 0),
+		time.Unix(3, 0),
+		time.Unix(4, 0),
+		time.Unix(5, 0),
+		time.Unix(6, 0),
+		time.Unix(7, 0),
+		time.Unix(8, 0),
+		time.Unix(9, 0),
+	}
+	_oneUser = &user{
+		Name:      "Jane Doe",
+		Email:     "jane@test.com",
+		CreatedAt: time.Date(1980, 1, 1, 12, 0, 0, 0, time.UTC),
+	}
+	_tenUsers = []*user{
+		_oneUser,
+		_oneUser,
+		_oneUser,
+		_oneUser,
+		_oneUser,
+		_oneUser,
+		_oneUser,
+		_oneUser,
+		_oneUser,
+		_oneUser,
+	}
+)
+
+// Add10Fields adds 10 fields like zap benchmark.
+func Add10Fields(handler *xylog.Handler) {
+	handler.AddField("int", _tenInts[0])
+	handler.AddField("ints", _tenInts)
+	handler.AddField("string", _tenStrings[0])
+	handler.AddField("strings", _tenStrings)
+	handler.AddField("time", _tenTimes[0])
+	handler.AddField("times", _tenTimes)
+	handler.AddField("user1", _oneUser)
+	handler.AddField("user2", _oneUser)
+	handler.AddField("users", _tenUsers)
+	handler.AddField("error", errExample)
 }

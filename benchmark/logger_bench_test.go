@@ -26,13 +26,12 @@ import (
 	"testing"
 
 	"github.com/xybor-x/xylog"
-	"github.com/xybor-x/xylog/encoding"
 	"github.com/xybor-x/xylog/test"
 )
 
 var DevnullEmitter *xylog.StreamEmitter
 
-func BenchmarkLoggerDisable(b *testing.B) {
+func BenchmarkDisabledWithoutFields(b *testing.B) {
 	test.WithBenchLogger(b, func(logger *xylog.Logger) {
 		logger.SetLevel(xylog.ERROR)
 		b.RunParallel(func(p *testing.PB) {
@@ -43,9 +42,34 @@ func BenchmarkLoggerDisable(b *testing.B) {
 	})
 }
 
-func BenchmarkLoggerWithoutHandler(b *testing.B) {
+func BenchmarkDisabledAccumulatedContext(b *testing.B) {
 	test.WithBenchLogger(b, func(logger *xylog.Logger) {
-		logger.RemoveAllHandlers()
+		logger.SetLevel(xylog.ERROR)
+		var handler = logger.Handlers()[0]
+		test.Add10Fields(handler)
+		b.RunParallel(func(p *testing.PB) {
+			for p.Next() {
+				logger.Debug(test.GetRandomMessage())
+			}
+		})
+	})
+}
+
+func BenchmarkDisabledAddingFields(b *testing.B) {
+	test.WithBenchLogger(b, func(logger *xylog.Logger) {
+		logger.SetLevel(xylog.ERROR)
+		var handler = logger.Handlers()[0]
+		test.AddFullMacros(handler)
+		b.RunParallel(func(p *testing.PB) {
+			for p.Next() {
+				test.Event10Fields(logger).Debug()
+			}
+		})
+	})
+}
+
+func BenchmarkWithoutFields(b *testing.B) {
+	test.WithBenchLogger(b, func(logger *xylog.Logger) {
 		logger.SetLevel(xylog.DEBUG)
 		b.RunParallel(func(p *testing.PB) {
 			for p.Next() {
@@ -55,11 +79,11 @@ func BenchmarkLoggerWithoutHandler(b *testing.B) {
 	})
 }
 
-func BenchmarkLoggerTextEncoding(b *testing.B) {
+func BenchmarkAccumulatedContext(b *testing.B) {
 	test.WithBenchLogger(b, func(logger *xylog.Logger) {
-		test.AddFullMacros(logger.Handlers()[0])
-		logger.Handlers()[0].SetEncoding(encoding.NewTextEncoding())
 		logger.SetLevel(xylog.DEBUG)
+		var handler = logger.Handlers()[0]
+		test.Add10Fields(handler)
 		b.RunParallel(func(p *testing.PB) {
 			for p.Next() {
 				logger.Debug(test.GetRandomMessage())
@@ -68,14 +92,14 @@ func BenchmarkLoggerTextEncoding(b *testing.B) {
 	})
 }
 
-func BenchmarkLoggerJSONEncoding(b *testing.B) {
+func BenchmarkAddingFields(b *testing.B) {
 	test.WithBenchLogger(b, func(logger *xylog.Logger) {
-		test.AddFullMacros(logger.Handlers()[0])
-		logger.Handlers()[0].SetEncoding(encoding.NewJSONEncoding())
 		logger.SetLevel(xylog.DEBUG)
+		var handler = logger.Handlers()[0]
+		test.AddFullMacros(handler)
 		b.RunParallel(func(p *testing.PB) {
 			for p.Next() {
-				logger.Debug(test.GetRandomMessage())
+				test.Event10Fields(logger).Debug()
 			}
 		})
 	})
