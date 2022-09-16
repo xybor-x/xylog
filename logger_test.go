@@ -163,3 +163,19 @@ func TestLoggerFindCaller(t *testing.T) {
 		xycond.ExpectIn("funcname=func1", w.Captured).Test(t)
 	})
 }
+
+func TestLoggerFlushParent(t *testing.T) {
+	var writer = &test.MockWriter{}
+	var emitter = xylog.NewStreamEmitter(writer)
+	var handler = xylog.GetHandler("")
+	handler.AddEmitter(emitter)
+
+	var logger = xylog.GetLogger(t.Name())
+	logger.AddHandler(handler)
+
+	var childLogger = xylog.GetLogger(t.Name() + ".child")
+	childLogger.Error("foo")
+	childLogger.Flush()
+
+	xycond.ExpectIn("foo", writer.Captured).Test(t)
+}
