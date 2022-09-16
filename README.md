@@ -10,8 +10,9 @@
 
 # Introduction
 
-Package xylog is designated for [structured logging](#structured-logging), [high performance](#benchmark), and
-readable syntax.
+Package xylog is designated for [structured logging](#structured-logging),
+[dynamical fields](#macros), [high performance](#benchmark), simple
+configuration, and readable syntax.
 
 The library is combined by
 [python logging](https://docs.python.org/3/library/logging.html) design and
@@ -42,8 +43,8 @@ var handler = xylog.GetHandler("handler")
 ```
 
 `Emitter` writes logging message to the specified output. Currently, only the
-`StreamEmitter` is supported. You can use any \``in this`Emitter\`.
-Writer
+`StreamEmitter` is supported. You can use any `Writer` in this type of
+`Emitter`.
 
 ```golang
 var emitter = xylog.NewStreamEmitter(os.Stdout)
@@ -142,7 +143,7 @@ logger.Info("start server")
 // host=localhost port=3333 message="start server"
 ```
 
-_NOTE: Fixed fields added to `Handler` will log faster than the oneadded to `Logger`_
+_NOTE: Fixed fields added to `Handler` will log faster than the one added to `Logger`_
 
 `Handler` can support different encoding types. By default, it is
 `TextEncoding`.
@@ -285,12 +286,50 @@ logger.Warning("this is service module")
 
 CPU: AMD Ryzen 7 5800H (3.2Ghz)
 
-These following benchmarks are measured with all [macros](#macros) and
-`SetFindCaller` is called with `false`.
+These benchmark of xylog are measured with `SetFindCaller` is called with
+`false`.
 
-| op             | time per op | alloc per op |
-| -------------- | ----------: | -----------: |
-| Disable        |        51ns |  0 allocs/op |
-| WithoutHandler |       247ns |  3 allocs/op |
-| TextEncoding   |       653ns | 14 allocs/op |
-| JSONEncoding   |       631ns | 14 allocs/op |
+_NOTE: The benchmarks are run on a different CPU with the [original one](https://github.com/uber-go/zap/blob/master/README.md#performance), so the benchmark values may different too_
+
+Log a message and 10 fields:
+
+| Package             |        Time | Time % to zap | Objects Allocated |
+| :------------------ | ----------: | ------------: | ----------------: |
+| :zap: zap           |  1707 ns/op |           +0% |       5 allocs/op |
+| :zap: zap (sugared) |  2043 ns/op |          +20% |      10 allocs/op |
+| zerolog             |   884 ns/op |          -48% |       1 allocs/op |
+| go-kit              |  6255 ns/op |         +266% |      58 allocs/op |
+| logrus              |  8384 ns/op |         +391% |      80 allocs/op |
+| apex/log            | 22707 ns/op |        +1230% |      65 allocs/op |
+| log15               | 25461 ns/op |        +1391% |      75 allocs/op |
+| :rocket: xylog      |  4601 ns/op |         +169% |      80 allocs/op |
+
+Log a message with a logger that already has 10 fields of context:
+
+| Package             |        Time | Time % to zap | Objects Allocated |
+| :------------------ | ----------: | ------------: | ----------------: |
+| :zap: zap           |   140 ns/op |           +0% |       0 allocs/op |
+| :zap: zap (sugared) |   181 ns/op |          +29% |       1 allocs/op |
+| zerolog             |    89 ns/op |          -36% |       0 allocs/op |
+| go-kit              |  5963 ns/op |        +4159% |      57 allocs/op |
+| logrus              |  6590 ns/op |        +4607% |      69 allocs/op |
+| apex/log            | 21777 ns/op |       +15455% |      54 allocs/op |
+| log15               | 15124 ns/op |       +10702% |      71 allocs/op |
+| :rocket: xylog      |   781 ns/op |         +457% |       5 allocs/op |
+
+Log a static string, without any context or `printf`-style templating:
+
+| Package             |       Time | Time % to zap | Objects Allocated |
+| :------------------ | ---------: | ------------: | ----------------: |
+| :zap: zap           |  154 ns/op |           +0% |       0 allocs/op |
+| :zap: zap (sugared) |  195 ns/op |          +27% |       1 allocs/op |
+| zerolog             |   87 ns/op |          -44% |       0 allocs/op |
+| go-kit              |  382 ns/op |         +148% |      10 allocs/op |
+| logrus              | 1008 ns/op |         +554% |      24 allocs/op |
+| apex/log            | 1744 ns/op |        +1032% |       6 allocs/op |
+| log15               | 4246 ns/op |        +2657% |      21 allocs/op |
+| :rocket: xylog      |  473 ns/op |         +207% |       5 allocs/op |
+
+# In development
+
+Add fast encoding with object, array, and map.

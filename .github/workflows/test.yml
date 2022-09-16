@@ -29,6 +29,3 @@ jobs:
         CODACY_USERNAME: xybor-x
         CODACY_PROJECT_NAME: xylog
       run: bash <(curl -Ls https://coverage.codacy.com/get.sh) report --force-coverage-parser go -r cover.out
-
-    - name: Benchmark
-      run: go test -benchmem -run=^$ -bench . ./...
