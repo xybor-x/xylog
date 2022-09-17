@@ -173,19 +173,6 @@ func (lg *Logger) AddField(key string, value any) {
 	})
 }
 
-// Flush writes unflushed buffered data to outputs.
-func (lg *Logger) Flush() {
-	var current = lg
-	for current != nil {
-		for _, h := range current.Handlers() {
-			for _, e := range h.Emitters() {
-				e.Flush()
-			}
-		}
-		current = current.parent
-	}
-}
-
 // Debug logs default formatting objects with DEBUG level.
 func (lg *Logger) Debug(s string) {
 	if lg.isEnabledFor(DEBUG) {

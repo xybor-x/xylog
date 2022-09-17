@@ -72,15 +72,17 @@ var globalLock = &xylock.RWLock{}
 // processid is always fixed and used to fill %(process) macro.
 var processid = os.Getpid()
 
-// rootLogger is the logger managing all loggers in program, it only should be
-// used to set default handler or propagate level to all loggers.
-var rootLogger *Logger
-
 // timeLayout is the default time layout used to print asctime when logging.
 var timeLayout = time.RFC3339Nano
 
-// handlerManager is a map to search handler by name.
+// rootLogger is the parent Logger of all Loggers in program.
+var rootLogger *Logger
+
+// handlerManager is a map to search Handler by name.
 var handlerManager = make(map[string]*Handler)
+
+// emitterManager is a list containing all created Emitters in program.
+var emitterManager []Emitter
 
 // skipCall is the depth of Logger.log call in program, 3 by default. Increase
 // this value if you want to wrap log methods of logger.
@@ -152,6 +154,16 @@ func GetLevelName(level int) string {
 	globalLock.RLock()
 	defer globalLock.RUnlock()
 	return levelToName[level]
+}
+
+// Flush writes unflushed buffered data to outputs.
+func Flush() {
+	globalLock.RLock()
+	defer globalLock.RUnlock()
+
+	for i := range emitterManager {
+		emitterManager[i].Flush()
+	}
 }
 
 func makeField(key string, value any) field {

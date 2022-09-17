@@ -35,7 +35,7 @@ func ExampleLogger() {
 	handler.AddEmitter(emitter)
 
 	var logger = xylog.GetLogger("example.Logger")
-	defer logger.Flush()
+	defer xylog.Flush()
 	logger.AddHandler(handler)
 	logger.SetLevel(xylog.DEBUG)
 	logger.Debugf("foo %s", "bar")
@@ -76,7 +76,7 @@ func ExampleEventLogger() {
 	handler.AddEmitter(emitter)
 
 	var logger = xylog.GetLogger("example.EventLogger")
-	defer logger.Flush()
+	defer xylog.Flush()
 	logger.AddHandler(handler)
 	logger.SetLevel(xylog.DEBUG)
 
@@ -95,7 +95,7 @@ func ExampleNewJSONEncoding() {
 	handler.AddMacro("level", "levelname")
 
 	var logger = xylog.GetLogger("example.JSONFormatter")
-	defer logger.Flush()
+	defer xylog.Flush()
 	logger.AddHandler(handler)
 	logger.SetLevel(xylog.DEBUG)
 	logger.Event("create").Field("product", 1235).Debug()
@@ -113,7 +113,7 @@ func ExampleNewTextEncoding() {
 	handler.AddMacro("level", "levelname")
 
 	var logger = xylog.GetLogger("example.TextFormatter")
-	defer logger.Flush()
+	defer xylog.Flush()
 	logger.AddHandler(handler)
 	logger.SetLevel(xylog.DEBUG)
 	logger.Event("create").Field("employee", "david").Debug()
@@ -129,7 +129,7 @@ func ExampleFilter() {
 	handler.AddFilter(&test.LoggerNameFilter{Name: "example.filter.chat"})
 
 	var logger = xylog.GetLogger("example.filter")
-	defer logger.Flush()
+	defer xylog.Flush()
 	logger.AddHandler(handler)
 	logger.SetLevel(xylog.DEBUG)
 
