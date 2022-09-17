@@ -197,7 +197,7 @@ func TestLoggerFlushParent(t *testing.T) {
 
 	var childLogger = xylog.GetLogger(t.Name() + ".child")
 	childLogger.Error("foo")
-	childLogger.Flush()
+	xylog.Flush()
 
 	xycond.ExpectIn("foo", writer.Captured).Test(t)
 }

@@ -30,12 +30,6 @@ import (
 	"github.com/xybor-x/xylock"
 )
 
-// LogWriter instances define a writer using to log.
-type LogWriter interface {
-	io.Writer
-	Close() error
-}
-
 // Emitter instances dispatch logging events to specific destinations.
 type Emitter interface {
 	// Emit will be called after a record was decided to log.
@@ -48,19 +42,24 @@ type Emitter interface {
 
 // StreamEmitter writes logging message to a stream.
 type StreamEmitter struct {
-	w      LogWriter
-	stream *bufio.Writer
-	lock   *xylock.Lock
+	w    *bufio.Writer
+	lock *xylock.Lock
 }
 
 // NewStreamEmitter creates a StreamEmitter which writes message to a LogWriter
 // (os.Stderr by default).
-func NewStreamEmitter(w LogWriter) *StreamEmitter {
+func NewStreamEmitter(w io.Writer) *StreamEmitter {
 	xycond.AssertNotNil(w)
+
+	var size = globalLock.RLockFunc(func() any { return bufferSize }).(int)
 	var e = &StreamEmitter{
-		w: w, lock: &xylock.Lock{},
-		stream: bufio.NewWriterSize(w, bufferSize),
+		lock: &xylock.Lock{},
+		w:    bufio.NewWriterSize(w, size),
 	}
+
+	globalLock.WLockFunc(func() {
+		emitterManager = append(emitterManager, e)
+	})
 	return e
 }
 
@@ -69,13 +68,9 @@ func (e *StreamEmitter) Emit(msg []byte) {
 	e.lock.Lock()
 	defer e.lock.Unlock()
 
-	if e.stream == nil {
-		return
-	}
-
-	var _, err = e.stream.Write(msg)
+	var _, err = e.w.Write(msg)
 	if err == nil {
-		_, err = e.stream.WriteRune('\n')
+		_, err = e.w.WriteRune('\n')
 	}
 	if err != nil {
 		fmt.Println("------------ Logging error ------------")
@@ -89,19 +84,5 @@ func (e *StreamEmitter) Flush() {
 	e.lock.Lock()
 	defer e.lock.Unlock()
 
-	if e.stream == nil {
-		return
-	}
-
-	e.stream.Flush()
-}
-
-// Close writes unflushed buffered data to destination, then closes the stream.
-func (e *StreamEmitter) Close() {
-	e.Flush()
-
-	e.lock.Lock()
-	defer e.lock.Unlock()
-	e.stream = nil
-	e.w.Close()
+	e.w.Flush()
 }

@@ -31,7 +31,7 @@ name is the root one.
 
 ```golang
 var logger = xylog.GetLogger("example")
-defer logger.Flush()
+defer xylog.Flush()
 ```
 
 `Handler` is responsible for generating logging messages. Like `Logger`,
@@ -261,7 +261,7 @@ func init() {
 import _ "common"
 
 var logger = xylog.GetLogger("parent.user")
-defer logger.Flush()
+defer xylog.Flush()
 logger.SetLevel(xylog.INFO)
 logger.AddField("module", "user")
 
@@ -277,7 +277,7 @@ logger.Debug("this is a not logged message")
 import _ "common"
 
 var logger = xylog.GetLogger("parent.service")
-defer logger.Flush()
+defer xylog.Flush()
 logger.AddField("module", "service")
 logger.AddField("service", "bar")
 

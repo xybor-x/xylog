@@ -51,19 +51,3 @@ func TestStreamEmitterEmitError(t *testing.T) {
 		xycond.ExpectEmpty(w.Captured).Test(t)
 	})
 }
-
-func TestStreamEmitterClose(t *testing.T) {
-	test.WithStreamEmitter(t, func(e *xylog.StreamEmitter, w *test.MockWriter) {
-		var msg = test.GetRandomMessage()
-		e.Close()
-		e.Emit([]byte(msg))
-		xycond.ExpectEmpty(w.Captured).Test(t)
-	})
-}
-
-func TestStreamEmitterCloseTwice(t *testing.T) {
-	test.WithStreamEmitter(t, func(e *xylog.StreamEmitter, w *test.MockWriter) {
-		e.Close()
-		e.Close()
-	})
-}

@@ -1,6 +1,8 @@
 # Developing
 
 -   Fix misspelling.
+-   Remove Logger.Flush method. Flush now is a global function which flushes all
+    emitters.
 
 # v0.2.0 (Sep 17, 2022)
 
