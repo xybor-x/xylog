@@ -1,3 +1,7 @@
+# Developing
+
+-   Fix misspelling.
+
 # v0.2.0 (Sep 17, 2022)
 
 -   Handler now has many Emitters (instead only one).

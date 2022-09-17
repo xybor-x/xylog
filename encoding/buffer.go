@@ -79,7 +79,7 @@ func (b *Buffer) Bytes() []byte {
 	return b.buf
 }
 
-// Len returns the lenght of underlying byte slice.
+// Len returns the length of underlying byte slice.
 func (b *Buffer) Len() int {
 	return len(b.buf)
 }
