@@ -55,7 +55,7 @@ func GetRandomMessage() string {
 	return messages[rand.Int()%len(messages)]
 }
 
-// GetRandomLoggerName returns a random logger name with dot-seperated.
+// GetRandomLoggerName returns a random logger name with dot-separated.
 func GetRandomLoggerName() string {
 	return loggerNames[rand.Int()%len(loggerNames)]
 }
