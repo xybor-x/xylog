@@ -1,5 +1,3 @@
-// MIT License
-//
 // Copyright (c) 2022 xybor-x
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -24,7 +22,7 @@ package encoding
 
 import "fmt"
 
-// Encoding instances allow to encode with a specified format.
+// Encoding instances allow encoding with a specified format.
 type Encoding interface {
 	// addString adds a field of string to the Encoder.
 	addString(k, v string)

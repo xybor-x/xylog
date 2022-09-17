@@ -18,25 +18,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-package test
-
-import (
-	"github.com/xybor-x/xylog"
-)
-
-// FullRecord is the record with all filled fields.
-var FullRecord = xylog.LogRecord{
-	Asctime:         "ASCTIME",
-	Created:         1,
-	FileName:        "FILENAME",
-	FuncName:        "FUNCNAME",
-	LevelName:       "LEVELNAME",
-	LevelNo:         2,
-	LineNo:          3,
-	Module:          "MODULE",
-	Msecs:           4,
-	Name:            "NAME",
-	PathName:        "PATHNAME",
-	Process:         5,
-	RelativeCreated: 6,
-}
+// Package xylog is designed for leveled and structured logging, dynamic fields,
+// high performance, zone management, simple configuration, and readable syntax.
+package xylog

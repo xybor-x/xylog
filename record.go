@@ -1,5 +1,3 @@
-// MIT License
-//
 // Copyright (c) 2022 xybor-x
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -25,7 +23,6 @@ package xylog
 import (
 	"path/filepath"
 	"runtime"
-	"strings"
 	"time"
 
 	"github.com/xybor-x/xyerror"
@@ -154,30 +151,23 @@ func makeRecord(name string, level int, fields ...field) LogRecord {
 }
 
 // extractFromPC returns module name and function name from program counter.
-func extractFromPC(pc uintptr) (module, fname string) {
+func extractFromPC(pc uintptr) (string, string) {
 	var s = runtime.FuncForPC(pc).Name()
 
-	// Split the funcname in the form of func with receiver.
-	// module.(receiver).func for example.
-	var parts []string
-	var sep = ".("
-	parts = strings.Split(s, ".(")
-
-	// If it is not the form of func with receiver, split it with normal func.
-	// module.func for example.
-	if len(parts) <= 1 {
-		sep = "."
-		parts = strings.Split(s, ".")
+	var moduleIdx = -1
+	for i := range s {
+		if s[i] == '.' && moduleIdx == -1 {
+			moduleIdx = i
+		}
+		if s[i] == '/' {
+			moduleIdx = -1
+		}
 	}
 
-	// In case one of form is valid, remove the funcname from string.
-	if len(parts) > 1 {
-		var funcname = parts[len(parts)-1]
-		module = strings.TrimSuffix(s, sep+funcname)
-		fname = strings.TrimPrefix(sep+funcname, ".")
-		return
+	if moduleIdx == -1 {
+		return "unknown", s
 	}
 
-	// Otherwise, the string contains only funcname.
-	return "unknown", s
+	return s[0:moduleIdx], s[moduleIdx+1:]
+
 }

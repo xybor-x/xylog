@@ -1,5 +1,3 @@
-// MIT License
-//
 // Copyright (c) 2022 xybor-x
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -174,15 +172,17 @@ func TestLoggerFindCaller(t *testing.T) {
 	defer xylog.SetFindCaller(false)
 	test.WithLogger(t, func(logger *xylog.Logger, w *test.MockWriter) {
 		var handler = logger.Handlers()[0]
+		handler.AddMacro("lineno", "lineno")
 		handler.AddMacro("module", "module")
 		handler.AddMacro("funcname", "funcname")
 
 		logger.Error("foo")
 
+		xycond.ExpectIn("lineno=179", w.Captured).Test(t)
 		xycond.ExpectIn(
-			"module=github.com/xybor-x/xylog_test.TestLoggerFindCaller",
-			w.Captured).Test(t)
-		xycond.ExpectIn("funcname=func1", w.Captured).Test(t)
+			"module=github.com/xybor-x/xylog_test", w.Captured).Test(t)
+		xycond.ExpectIn(
+			"funcname=TestLoggerFindCaller.func1", w.Captured).Test(t)
 	})
 }
 

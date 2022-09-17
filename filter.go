@@ -1,5 +1,3 @@
-// MIT License
-//
 // Copyright (c) 2022 xybor-x
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -27,7 +25,7 @@ type Filter interface {
 	Filter(record LogRecord) bool
 }
 
-// A base class for loggers and handlers which allows them to share common code.
+// A base class for loggers and handlers which allows them sharing common code.
 type filterer struct {
 	filters []Filter
 }

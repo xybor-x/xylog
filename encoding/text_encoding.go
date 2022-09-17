@@ -1,5 +1,3 @@
-// MIT License
-//
 // Copyright (c) 2022 xybor-x
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -33,7 +31,7 @@ func NewTextEncoding() Encoding {
 
 // textEncoding creates a buffer with format of key=value.
 type textEncoding struct {
-	buf *buffer
+	buf *Buffer
 }
 
 // addString adds a field of string to encoder.
