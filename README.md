@@ -1,4 +1,4 @@
-[![Xybor founder](https://img.shields.io/badge/xybor-huykingsofm-red)](https://github.com/huykingsofm)
+[![xybor founder](https://img.shields.io/badge/xybor-huykingsofm-red)](https://github.com/huykingsofm)
 [![Go Reference](https://pkg.go.dev/badge/github.com/xybor-x/xylog.svg)](https://pkg.go.dev/github.com/xybor-x/xylog)
 [![GitHub Repo stars](https://img.shields.io/github/stars/xybor-x/xylog?color=yellow)](https://github.com/xybor-x/xylog)
 [![GitHub top language](https://img.shields.io/github/languages/top/xybor-x/xylog?color=lightblue)](https://go.dev/)
@@ -10,8 +10,9 @@
 
 # Introduction
 
-Package xylog is designated for [structured logging](#structured-logging),
-[dynamical fields](#macros), [high performance](#benchmark), simple
+Package xylog is designed for [leveled](#logging-level) and
+[structured](#structured-logging) logging, [dynamic fields](#macros),
+[high performance](#benchmark), [zone management](#hierarchical-logger), simple
 configuration, and readable syntax.
 
 The library is combined by
@@ -24,35 +25,38 @@ The library is combined by
 hierarchical names, such as "a", "a.b", "a.b.c" or similar. For "a.b.c", its
 parents are "a" and "a.b".
 
-A `Logger` is obtained by `GetLogger` method. If the `Logger` with that name
-hasn't existed before, the method will create a new one.
+A `Logger` is obtained using `GetLogger` method. If the `Logger` with that name
+didn't exist before, the method will create a new one. The `Logger` with empty
+name is the root one.
 
 ```golang
 var logger = xylog.GetLogger("example")
 defer logger.Flush()
 ```
 
-`Handler` is responsible for creating the logging message. Like `Logger`,
-`Handler` is also determined by its name, however, the name is not hierarchical.
-Every call of `GetHandler` with the same name will give the same `Handler`.
+`Handler` is responsible for generating logging messages. Like `Logger`,
+`Handler` is also identified by its name, however, the name is not hierarchical.
+Every `GetHandler` call with the same name gives the same `Handler`.
 
-_Exception: `Handlers` with the empty name are always different._
+_Exception: `Handlers` with the empty names are always different._
 
 ```golang
 var handler = xylog.GetHandler("handler")
 ```
 
-`Emitter` writes logging message to the specified output. Currently, only the
-`StreamEmitter` is supported. You can use any `Writer` in this type of
-`Emitter`.
+`Emitter` writes logging messages to the specified output. Currently, only
+`StreamEmitter` is supported. You can use any `Writer` in this `Emitter` type.
 
 ```golang
 var emitter = xylog.NewStreamEmitter(os.Stdout)
 ```
 
 When a logging method is called, the `Logger` creates a `LogRecord` and sends it
-to underlying `Handlers`. `Handlers` converts `LogRecord` to text and sends it
+to underlying `Handlers`. `Handlers` convert `LogRecord` to text and send it
 to `Emitters`.
+
+A `Logger` can have multiple `Handlers`, and a `Handler` can have multiple
+`Emitters`.
 
 ```golang
 handler.AddEmitter(emitter)
@@ -60,10 +64,10 @@ logger.AddHandler(handler)
 ```
 
 After preparing `Logger`, `Handler`, and `Emitter`, you can log the first
-message.
+messages.
 
 ```golang
-logger.Debug("foo") // This message is blocked by Logger preferred level.
+logger.Debug("foo") // This message is blocked by Logger's preferred level.
 logger.Warning("bar")
 
 // Output:
@@ -77,10 +81,12 @@ lower than the preferred one, the message will not be logged.
 
 By default:
 
--   `Handler` logs all logging level.
--   `Logger`'s preferred level depends on its parents.
+-   `Handler`'s preferred level is `NOTSET` (it logs all logging levels).
+-   `Logger`'s preferred level depends on its parents. When a `Logger` is newly
+    created, its preferred level is the nearest parent's one. The root logger's
+    preferred level is `WARNING`.
 
-You can set the new preferred level of `Logger` and `Handler`.
+You can set a new preferred level for both `Logger` and `Handler`.
 
 ```golang
 logger.SetLevel(xylog.DEBUG)
@@ -201,12 +207,11 @@ _\* These are macros that are only available if `xylog.SetFindCaller` is called 
 
 # Filter
 
-`Filter` instances are used to perform arbitrary filtering of `LogRecord`.
+`Filter` can be used by `Handlers` and `Loggers` for more sophisticated
+filtering than is provided by levels.
 
-A `Filter` struct needs to define `Format(LogRecord)` method, which returns true
-if it allows to log the `LogRecord`, and vice versa.
-
-`Filter` can be used in both `Handler` and `Logger`.
+A `Filter` instance needs to define `Filter(LogRecord)` method, which returns
+`true` if it allows logging the `LogRecord`, and vice versa.
 
 ```golang
 type NameFilter struct {

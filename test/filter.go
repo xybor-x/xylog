@@ -1,5 +1,3 @@
-// MIT License
-//
 // Copyright (c) 2022 xybor-x
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -24,8 +22,8 @@ package test
 
 import "github.com/xybor-x/xylog"
 
-// LoggerNameFilter is a Filter allows to log Log Records whose name is the same
-// with the predefined one.
+// LoggerNameFilter is a Filter allows logging LogRecords whose names are the
+// same with the predefined one.
 type LoggerNameFilter struct {
 	Name string
 }

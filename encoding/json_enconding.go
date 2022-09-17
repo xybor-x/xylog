@@ -1,5 +1,3 @@
-// MIT License
-//
 // Copyright (c) 2022 xybor-x
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -31,7 +29,7 @@ func NewJSONEncoding() Encoding {
 
 // jsonEncoding creates a buffer with json format.
 type jsonEncoding struct {
-	buf *buffer
+	buf *Buffer
 }
 
 // addString adds a field of string to encoder.

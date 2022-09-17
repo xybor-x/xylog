@@ -1,5 +1,3 @@
-// MIT License
-//
 // Copyright (c) 2022 xybor-x
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -20,7 +18,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-// Package xylog is a logging module based on the design of python logging.
 package xylog
 
 import (

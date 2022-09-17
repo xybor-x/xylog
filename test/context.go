@@ -1,5 +1,3 @@
-// MIT License
-//
 // Copyright (c) 2022 xybor-x
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -29,7 +27,7 @@ import (
 	"github.com/xybor-x/xylog"
 )
 
-// WithLogger allows to use a Logger created with a MockWriter quickly.
+// WithLogger allows using a Logger created with a MockWriter quickly.
 func WithLogger(t *testing.T, f func(logger *xylog.Logger, w *MockWriter)) {
 	xylog.SetBufferSize(1)
 	defer xylog.SetBufferSize(4096)
@@ -47,7 +45,7 @@ func WithLogger(t *testing.T, f func(logger *xylog.Logger, w *MockWriter)) {
 	f(logger, writer)
 }
 
-// WithHandler allows to use a Handler with MockWriter.
+// WithHandler allows using a Handler with MockWriter.
 func WithHandler(t *testing.T, f func(h *xylog.Handler, w *MockWriter)) {
 	xylog.SetBufferSize(1)
 	defer xylog.SetBufferSize(4096)
@@ -59,7 +57,7 @@ func WithHandler(t *testing.T, f func(h *xylog.Handler, w *MockWriter)) {
 	f(handler, writer)
 }
 
-// WithStreamEmitter allows to use a StreamEmitter created with a MockWriter
+// WithStreamEmitter allows using a StreamEmitter created with a MockWriter
 // quickly.
 func WithStreamEmitter(
 	t *testing.T, f func(e *xylog.StreamEmitter, w *MockWriter),
@@ -71,7 +69,7 @@ func WithStreamEmitter(
 	f(emitter, writer)
 }
 
-// WithBenchLogger allows to use a Logger whose output is devnull.
+// WithBenchLogger allows using a Logger whose output is devnull.
 func WithBenchLogger(b *testing.B, f func(logger *xylog.Logger)) {
 	var devnull, err = os.OpenFile(os.DevNull, os.O_WRONLY, 0666)
 	if err != nil {
