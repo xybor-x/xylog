@@ -21,12 +21,15 @@
 package xylog_test
 
 import (
+	"os"
 	"testing"
 	"time"
 
 	"github.com/xybor-x/xycond"
 	"github.com/xybor-x/xyerror"
 	"github.com/xybor-x/xylog"
+	"github.com/xybor-x/xylog/encoding"
+	"github.com/xybor-x/xylog/test"
 )
 
 func TestConfigSet(t *testing.T) {
@@ -42,4 +45,36 @@ func TestLevel(t *testing.T) {
 	xycond.ExpectPanic(xyerror.AssertionError, func() {
 		xylog.CheckLevel(150)
 	}).Test(t)
+}
+
+func TestSimpleConfig(t *testing.T) {
+	xylog.SetBufferSize(1)
+	defer xylog.SetBufferSize(4096)
+	var writer = &test.MockWriter{}
+	var logger, err = xylog.SimpleConfig{
+		Encoding: encoding.NewJSONEncoding(),
+		Writer:   writer,
+	}.Apply()
+
+	xycond.ExpectNil(err).Test(t)
+	logger.Error("foo")
+	xycond.ExpectIn(`"level":"ERROR","messsage":"foo"`, writer.Captured).Test(t)
+}
+
+func TestSimpleConfigBothFilenameAndWriter(t *testing.T) {
+	var writer = &test.MockWriter{}
+	var _, err = xylog.SimpleConfig{
+		Filename: "foo.log",
+		Writer:   writer,
+	}.Apply()
+
+	xycond.ExpectError(err, xyerror.ParameterError).Test(t)
+}
+
+func TestSimpleConfigInvalidFile(t *testing.T) {
+	var _, err = xylog.SimpleConfig{
+		Filename: "/not/a/path",
+	}.Apply()
+
+	xycond.ExpectError(err, os.ErrNotExist).Test(t)
 }

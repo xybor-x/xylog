@@ -29,6 +29,25 @@ import (
 	"github.com/xybor-x/xylog/test"
 )
 
+func ExampleSimepleConfig() {
+	var config = &xylog.SimpleConfig{
+		Name:   "simple",
+		Level:  xylog.DEBUG,
+		Writer: os.Stdout,
+	}
+
+	var logger, err = config.AddMacro("level", "levelname").Apply()
+	if err != nil {
+		fmt.Println("An error occurred:", err)
+	}
+	defer xylog.Flush()
+
+	logger.Warn("simple config")
+
+	// Output:
+	// level=WARNING messsage="simple config"
+}
+
 func ExampleLogger() {
 	var emitter = xylog.NewStreamEmitter(os.Stdout)
 	var handler = xylog.GetHandler("")
