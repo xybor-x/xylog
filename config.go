@@ -21,10 +21,12 @@
 package xylog
 
 import (
+	"io"
 	"os"
 	"time"
 
 	"github.com/xybor-x/xycond"
+	"github.com/xybor-x/xyerror"
 	"github.com/xybor-x/xylock"
 	"github.com/xybor-x/xylog/encoding"
 )
@@ -164,6 +166,110 @@ func Flush() {
 	for i := range emitterManager {
 		emitterManager[i].Flush()
 	}
+}
+
+// SimpleConfig supports to quickly create a Logger without configurating
+// Emitter and Handler.
+type SimpleConfig struct {
+	// Name is the name of Logger. It can be used later with GetLogger function.
+	// Default to an empty name (the root logger).
+	Name string
+
+	// Use the specified encoding to format the output. Default to TextEncoding.
+	Encoding encoding.Encoding
+
+	// Specify that Logger will write the output to a file. Do NOT use together
+	// with Writer.
+	Filename string
+
+	// Specify the mode to open file. Default to APPEND | CREATE | WRONLY.
+	Filemode int
+
+	// Specify the permission when creating the file. Default to 0666.
+	Fileperm os.FileMode
+
+	// The logging level. Default to WARNING.
+	Level int
+
+	// The time layout when format the time string. Default to RFC3339Nano.
+	TimeLayout string
+
+	// Specify that Logger will write the output to a file. Do NOT use together
+	// with Filename.
+	Writer io.Writer
+
+	macros []macroField
+}
+
+// AddMacro adds a macro value to output format.
+func (cfg *SimpleConfig) AddMacro(name, value string) *SimpleConfig {
+	cfg.macros = append(cfg.macros, macroField{key: name, macro: value})
+	return cfg
+}
+
+// Apply creates a Logger based on the configuration.
+func (cfg SimpleConfig) Apply() (*Logger, error) {
+	if cfg.TimeLayout != "" {
+		SetTimeLayout(cfg.TimeLayout)
+	}
+
+	if cfg.Filename != "" && cfg.Writer != nil {
+		return nil, xyerror.ParameterError.New("do not set both filename and writer")
+	}
+
+	var filemode = cfg.Filemode
+	if filemode == 0 {
+		filemode = os.O_APPEND | os.O_CREATE | os.O_WRONLY
+	}
+
+	var fileperm = cfg.Fileperm
+	if fileperm == 0 {
+		fileperm = 0666
+	}
+
+	var writer = cfg.Writer
+	if writer == nil {
+		if cfg.Filename == "" {
+			writer = os.Stderr
+		} else {
+			var err error
+			writer, err = os.OpenFile(cfg.Filename, filemode, fileperm)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	var emitter = NewStreamEmitter(writer)
+
+	var enc = cfg.Encoding
+	if enc == nil {
+		enc = encoding.NewTextEncoding()
+	}
+
+	var macros = cfg.macros
+	if macros == nil {
+		macros = append(macros, macroField{key: "time", macro: "asctime"})
+		macros = append(macros, macroField{key: "level", macro: "levelname"})
+	}
+
+	var handler = GetHandler("")
+	handler.AddEmitter(emitter)
+	handler.SetEncoding(enc)
+	for i := range macros {
+		handler.AddMacro(macros[i].key, macros[i].macro)
+	}
+
+	var level = cfg.Level
+	if level == 0 {
+		level = WARNING
+	}
+
+	var logger = GetLogger(cfg.Name)
+	logger.AddHandler(handler)
+	logger.SetLevel(level)
+
+	return logger, nil
 }
 
 func makeField(key string, value any) field {

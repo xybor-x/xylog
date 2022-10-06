@@ -21,6 +21,52 @@ The library is combined by
 
 # Quick start
 
+You can easily configure a logger with `SimpleConfig`.
+
+There are some fields you can modify with this way (note that all fields are
+optional):
+
+-   `Name` is the name of Logger. It can be used later with `GetLogger`
+    function. Default to an empty name (the root logger).
+
+-   `Encoding` to format the output. Default to `TextEncoding`.
+
+-   `Filename` specifies that `Logger` will write the output to a file. Do NOT
+    use together with `Writer`.
+
+-   `Filemode` specifies the mode to open file. Default to `APPEND` \| `CREATE`
+    \| `WRONLY`.
+
+-   `Fileperm` specifies the permission when creating the file. Default to 0666.
+
+-   `Level` specifies the logging level. Default to `WARNING`.
+
+-   `TimeLayout` when format the time string. Default to `RFC3339Nano`.
+
+-   `Writer` specifies that Logger will write the output to a file. Do NOT use
+    together with `Filename`.
+
+```golang
+var config = &xylog.SimepleConfig{
+    Level:  xylog.DEBUG,
+    Writer: os.Stdout,
+}
+
+var logger, err = config.AddMacro("level", "levelname").Apply()
+if err != nil {
+    fmt.Println("An error occurred:", err)
+    os.Exit(1)
+}
+defer xylog.Flush()
+
+logger.Info("logging message")
+
+// Output:
+// level=INFO messsage="logging message"
+```
+
+# Full configuration
+
 `Logger` is directly used by application code. `Logger` names are dot-separated
 hierarchical names, such as "a", "a.b", "a.b.c" or similar. For "a.b.c", its
 parents are "a" and "a.b".

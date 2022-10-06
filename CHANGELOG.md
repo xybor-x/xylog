@@ -1,3 +1,7 @@
+# Developing
+
+-   Support simple configuration.
+
 # v0.3.0 (Sep 17, 2022)
 
 -   Fix misspelling.
