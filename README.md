@@ -47,7 +47,8 @@ optional):
     together with `Filename`.
 
 ```golang
-var config = &xylog.SimepleConfig{
+var config = &xylog.SimpleConfig{
+    Name:   "simple-logger",
     Level:  xylog.DEBUG,
     Writer: os.Stdout,
 }
@@ -59,10 +60,13 @@ if err != nil {
 }
 defer xylog.Flush()
 
-logger.Info("logging message")
+logger.Debug("logging message")
+logger.Event("create-user").Field("username", "foo").
+    Field("email", "bar@buzz.com").Field("Age", 25).Info()
 
 // Output:
-// level=INFO messsage="logging message"
+// level=DEBUG messsage="logging message"
+// level=INFO event=create-user username=foo email=bar@buzz.com Age=25
 ```
 
 # Full configuration
