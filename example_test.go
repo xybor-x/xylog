@@ -29,9 +29,9 @@ import (
 	"github.com/xybor-x/xylog/test"
 )
 
-func ExampleSimepleConfig() {
+func ExampleSimpleConfig() {
 	var config = &xylog.SimpleConfig{
-		Name:   "simple",
+		Name:   "simple-logger",
 		Level:  xylog.DEBUG,
 		Writer: os.Stdout,
 	}
@@ -42,10 +42,13 @@ func ExampleSimepleConfig() {
 	}
 	defer xylog.Flush()
 
-	logger.Warn("simple config")
+	logger.Debug("logging message")
+	logger.Event("create-user").Field("username", "foo").
+		Field("email", "bar@buzz.com").Field("Age", 25).Info()
 
 	// Output:
-	// level=WARNING messsage="simple config"
+	// level=DEBUG messsage="logging message"
+	// level=INFO event=create-user username=foo email=bar@buzz.com Age=25
 }
 
 func ExampleLogger() {
