@@ -65,6 +65,7 @@ func TestLoggerLogMethods(t *testing.T) {
 			tests[i].methodf(msgf)
 			xycond.ExpectIn(msgf, w.Captured).Test(t)
 		}
+
 		w.Reset()
 		logger.Log(xylog.DEBUG, fixedMsg)
 		xycond.ExpectIn(fixedMsg, w.Captured).Test(t)
@@ -84,6 +85,7 @@ func TestLoggerLogMethods(t *testing.T) {
 			tests[i].methodf(msgf)
 			xycond.ExpectNotIn(msgf, w.Captured).Test(t)
 		}
+
 		w.Reset()
 		logger.Log(xylog.DEBUG, fixedMsg)
 		xycond.ExpectNotIn(fixedMsg, w.Captured).Test(t)
@@ -102,6 +104,7 @@ func TestLoggerCallHandlerHierarchy(t *testing.T) {
 		child.Log(xylog.WARN, msg)
 		xycond.ExpectIn(msg, w.Captured).Test(t)
 
+		w.Reset()
 		msg = test.GetRandomMessage()
 		child.Log(xylog.DEBUG, msg)
 		xycond.ExpectNotIn(msg, w.Captured).Test(t)
@@ -178,7 +181,7 @@ func TestLoggerFindCaller(t *testing.T) {
 
 		logger.Error("foo")
 
-		xycond.ExpectIn("lineno=179", w.Captured).Test(t)
+		xycond.ExpectIn("lineno=182", w.Captured).Test(t)
 		xycond.ExpectIn(
 			"module=github.com/xybor-x/xylog_test", w.Captured).Test(t)
 		xycond.ExpectIn(
