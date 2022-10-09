@@ -21,10 +21,11 @@
 package test
 
 import (
-	"os"
+	"io"
 	"testing"
 
 	"github.com/xybor-x/xylog"
+	"github.com/xybor-x/xylog/encoding"
 )
 
 // WithLogger allows using a Logger created with a MockWriter quickly.
@@ -69,15 +70,12 @@ func WithStreamEmitter(
 	f(emitter, writer)
 }
 
-// WithBenchLogger allows using a Logger whose output is devnull.
+// WithBenchLogger allows using a Logger whose output is io.Discard.
 func WithBenchLogger(b *testing.B, f func(logger *xylog.Logger)) {
-	var devnull, err = os.OpenFile(os.DevNull, os.O_WRONLY, 0666)
-	if err != nil {
-		b.Fail()
-	}
-	var emitter = xylog.NewStreamEmitter(devnull)
+	var emitter = xylog.NewStreamEmitter(io.Discard)
 	var handler = xylog.GetHandler("")
 	handler.AddEmitter(emitter)
+	handler.SetEncoding(encoding.NewJSONEncoding())
 
 	var logger = xylog.GetLogger(b.Name())
 	// Sometimes the testing runs multiple times and this logger will add more

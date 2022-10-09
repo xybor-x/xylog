@@ -33,18 +33,41 @@ func TestEventLogger(t *testing.T) {
 	test.WithLogger(t, func(logger *xylog.Logger, w *test.MockWriter) {
 		logger.SetLevel(xylog.DEBUG)
 		var msg = test.GetRandomMessage()
-		var elogger = logger.Event(msg)
-		var tests = []func(){
-			elogger.Debug, elogger.Info, elogger.Warn, elogger.Warning,
-			elogger.Error, elogger.Fatal, elogger.Critical,
-		}
 
-		for i := range tests {
-			w.Reset()
-			tests[i]()
-			xycond.ExpectIn(fmt.Sprintf("event=\"%s\"", msg), w.Captured).
-				Test(t)
-		}
+		w.Reset()
+		logger.Event(msg).Debug()
+		xycond.ExpectIn(fmt.Sprintf("event=\"%s\"", msg), w.Captured).
+			Test(t)
+
+		w.Reset()
+		logger.Event(msg).Info()
+		xycond.ExpectIn(fmt.Sprintf("event=\"%s\"", msg), w.Captured).
+			Test(t)
+
+		w.Reset()
+		logger.Event(msg).Warn()
+		xycond.ExpectIn(fmt.Sprintf("event=\"%s\"", msg), w.Captured).
+			Test(t)
+
+		w.Reset()
+		logger.Event(msg).Warning()
+		xycond.ExpectIn(fmt.Sprintf("event=\"%s\"", msg), w.Captured).
+			Test(t)
+
+		w.Reset()
+		logger.Event(msg).Error()
+		xycond.ExpectIn(fmt.Sprintf("event=\"%s\"", msg), w.Captured).
+			Test(t)
+
+		w.Reset()
+		logger.Event(msg).Fatal()
+		xycond.ExpectIn(fmt.Sprintf("event=\"%s\"", msg), w.Captured).
+			Test(t)
+
+		w.Reset()
+		logger.Event(msg).Critical()
+		xycond.ExpectIn(fmt.Sprintf("event=\"%s\"", msg), w.Captured).
+			Test(t)
 	})
 }
 

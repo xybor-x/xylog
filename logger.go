@@ -299,10 +299,8 @@ func (lg *Logger) Stack(level int) {
 
 // Event creates an EventLogger which logs key-value pairs.
 func (lg *Logger) Event(e string) *EventLogger {
-	var elogger = &EventLogger{
-		lg:     lg,
-		fields: make([]field, 0, 5),
-	}
+	var elogger = eventLoggerPool.Get().(*EventLogger)
+	elogger.lg = lg
 	elogger.Field("event", e)
 	return elogger
 }
