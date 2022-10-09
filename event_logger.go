@@ -20,6 +20,14 @@
 
 package xylog
 
+import "sync"
+
+var eventLoggerPool = sync.Pool{
+	New: func() any {
+		return &EventLogger{}
+	},
+}
+
 // EventLogger is a logger wrapper supporting to compose logging message with
 // key-value structure.
 type EventLogger struct {
@@ -35,6 +43,7 @@ func (e *EventLogger) Field(key string, value any) *EventLogger {
 
 // Debug calls Log with DEBUG level.
 func (e *EventLogger) Debug() {
+	defer e.free()
 	if e.lg.isEnabledFor(DEBUG) {
 		e.lg.log(DEBUG, e.fields...)
 	}
@@ -42,6 +51,7 @@ func (e *EventLogger) Debug() {
 
 // Info calls Log with INFO level.
 func (e *EventLogger) Info() {
+	defer e.free()
 	if e.lg.isEnabledFor(INFO) {
 		e.lg.log(INFO, e.fields...)
 	}
@@ -49,6 +59,7 @@ func (e *EventLogger) Info() {
 
 // Warn calls Log with WARN level.
 func (e *EventLogger) Warn() {
+	defer e.free()
 	if e.lg.isEnabledFor(WARN) {
 		e.lg.log(WARN, e.fields...)
 	}
@@ -56,6 +67,7 @@ func (e *EventLogger) Warn() {
 
 // Warning calls Log with WARNING level.
 func (e *EventLogger) Warning() {
+	defer e.free()
 	if e.lg.isEnabledFor(WARNING) {
 		e.lg.log(WARNING, e.fields...)
 	}
@@ -63,6 +75,7 @@ func (e *EventLogger) Warning() {
 
 // Error calls Log with ERROR level.
 func (e *EventLogger) Error() {
+	defer e.free()
 	if e.lg.isEnabledFor(ERROR) {
 		e.lg.log(ERROR, e.fields...)
 	}
@@ -70,6 +83,7 @@ func (e *EventLogger) Error() {
 
 // Fatal calls Log with FATAL level.
 func (e *EventLogger) Fatal() {
+	defer e.free()
 	if e.lg.isEnabledFor(FATAL) {
 		e.lg.log(FATAL, e.fields...)
 	}
@@ -77,6 +91,7 @@ func (e *EventLogger) Fatal() {
 
 // Critical calls Log with CRITICAL level.
 func (e *EventLogger) Critical() {
+	defer e.free()
 	if e.lg.isEnabledFor(CRITICAL) {
 		e.lg.log(CRITICAL, e.fields...)
 	}
@@ -84,8 +99,15 @@ func (e *EventLogger) Critical() {
 
 // Log logs with a custom level.
 func (e *EventLogger) Log(level int) {
+	defer e.free()
 	level = CheckLevel(level)
 	if e.lg.isEnabledFor(level) {
 		e.lg.log(level, e.fields...)
 	}
+}
+
+// free clears fields in EventLogger and puts it to pool.
+func (e *EventLogger) free() {
+	e.fields = e.fields[:0]
+	eventLoggerPool.Put(e)
 }

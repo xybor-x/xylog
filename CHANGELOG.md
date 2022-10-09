@@ -1,6 +1,9 @@
 # Developing
 
 -   Support simple configuration.
+-   Increase at least 50% performance by using EventLogger pool.
+-   Modify benchmark: use JSONEncoding instead of TextEncoding; use io.Discard
+    instead of devnull.
 
 # v0.3.0 (Sep 17, 2022)
 
