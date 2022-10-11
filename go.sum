@@ -1,7 +1,7 @@
-github.com/xybor-x/xycond v1.0.0-beta.1 h1:bWpQqT0rt6h3czyxCXEpKdyGOxU4eLq0xz6CjvR8+SY=
-github.com/xybor-x/xycond v1.0.0-beta.1/go.mod h1:WO40uIl00WJ6Mfwhi9ejU4TW9dSEAp7I849BQeLk+ZQ=
-github.com/xybor-x/xyerror v0.1.0-alpha h1:AcWlM52PfdFFHLc/dEAk6vT5lb4+gnuPdOODq7gQ5VM=
-github.com/xybor-x/xyerror v0.1.0-alpha/go.mod h1:2P0SjxOPAkdllEpPhmlWYVOGKDVxzwl/RkmLcc2i9Os=
+github.com/xybor-x/xycond v1.0.0 h1:RJippg8hc0/HcEerJQrddHok7iaZUyLGrjN6Pbpe8u8=
+github.com/xybor-x/xycond v1.0.0/go.mod h1:b/NXVIxFPWvGyHAAdkNooYSw9IpqF04VuW2+i7iE8sU=
+github.com/xybor-x/xyerror v1.0.0 h1:tFqmi+SOnNrUaL1FDzp5qr/Ed0SY0tUfm1inmFMrt7g=
+github.com/xybor-x/xyerror v1.0.0/go.mod h1:2P0SjxOPAkdllEpPhmlWYVOGKDVxzwl/RkmLcc2i9Os=
 github.com/xybor-x/xylock v0.0.1 h1:/LhbJb6WJkUW+xE4/bBpIC76BKrbgnayiId6LdouqUw=
 github.com/xybor-x/xylock v0.0.1/go.mod h1:IQvixGhBrgKdh0HcCJAqzYzk482SGyYOzezBxK6UdRc=
 golang.org/x/sync v0.0.0-20220819030929-7fc1605a5dde h1:ejfdSekXMDxDLbRrJMwUk6KnSLZ2McaUCVcIKM+N6jc=
