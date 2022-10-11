@@ -44,7 +44,7 @@ func BenchmarkDisabledAccumulatedContext(b *testing.B) {
 	test.WithBenchLogger(b, func(logger *xylog.Logger) {
 		logger.SetLevel(xylog.ERROR)
 		var handler = logger.Handlers()[0]
-		test.Add10Fields(handler)
+		add10FieldsToHandler(handler)
 		b.RunParallel(func(p *testing.PB) {
 			for p.Next() {
 				logger.Debug(test.GetRandomMessage())
@@ -60,7 +60,7 @@ func BenchmarkDisabledAddingFields(b *testing.B) {
 		test.AddFullMacros(handler)
 		b.RunParallel(func(p *testing.PB) {
 			for p.Next() {
-				test.Event10Fields(logger).Debug()
+				add10EventLoggerField(logger).Debug()
 			}
 		})
 	})
@@ -81,7 +81,7 @@ func BenchmarkAccumulatedContext(b *testing.B) {
 	test.WithBenchLogger(b, func(logger *xylog.Logger) {
 		logger.SetLevel(xylog.DEBUG)
 		var handler = logger.Handlers()[0]
-		test.Add10Fields(handler)
+		add10FieldsToHandler(handler)
 		b.RunParallel(func(p *testing.PB) {
 			for p.Next() {
 				logger.Debug(test.GetRandomMessage())
@@ -97,7 +97,7 @@ func BenchmarkAddingFields(b *testing.B) {
 		test.AddFullMacros(handler)
 		b.RunParallel(func(p *testing.PB) {
 			for p.Next() {
-				test.Event10Fields(logger).Debug()
+				add10EventLoggerField(logger).Debug()
 			}
 		})
 	})
