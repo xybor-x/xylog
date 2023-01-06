@@ -68,7 +68,7 @@ func TestHandlerFileters(t *testing.T) {
 }
 
 func TestHandlerEmitters(t *testing.T) {
-	var emitter = xylog.NewStreamEmitter(os.Stdout)
+	var emitter = xylog.NewDefaultEmitter(os.Stdout)
 	var handler = xylog.GetHandler("")
 	handler.AddEmitter(emitter)
 	xycond.ExpectEqual(len(handler.Emitters()), 1).Test(t)

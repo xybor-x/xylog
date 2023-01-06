@@ -58,7 +58,6 @@ func addFullTypes(e *encoding.Encoder) {
 	e.Add("error", errors.New("error"))
 	e.Add("stringer", SStringer{})
 	e.Add("gostringer", SGoStringer{})
-	e.Add("default", func() {})
 }
 
 func TestTextEncoder(t *testing.T) {
@@ -76,10 +75,10 @@ func TestJSONEncoder(t *testing.T) {
 	var encoder = encoding.NewEncoder(encoding.NewJSONEncoding())
 	addFullTypes(encoder)
 
-	xycond.ExpectIn(`"string":"foo bar","bool":true,"int":-1,"int8":-2,`+
+	xycond.ExpectIn(`{"string":"foo bar","bool":true,"int":-1,"int8":-2,`+
 		`"int16":-3,"int32":-4,"int64":-5,"uint":1,"uint8":2,"uint16":3,`+
 		`"uint32":4,"uint64":5,"float32":0.1,"float64":0.2,"error":"error",`+
-		`"stringer":"stringer","gostringer":"gostringer"`,
+		`"stringer":"stringer","gostringer":"gostringer"}`,
 		string(encoder.Encode())).Test(t)
 }
 

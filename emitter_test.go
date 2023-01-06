@@ -31,7 +31,7 @@ import (
 
 func TestNewStreamEmitterWithNil(t *testing.T) {
 	xycond.ExpectPanic(xyerror.AssertionError, func() {
-		xylog.NewStreamEmitter(nil)
+		xylog.NewDefaultEmitter(nil)
 	}).Test(t)
 }
 

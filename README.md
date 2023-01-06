@@ -98,7 +98,7 @@ var handler = xylog.GetHandler("handler")
 `StreamEmitter` is supported. You can use any `Writer` in this `Emitter` type.
 
 ```golang
-var emitter = xylog.NewStreamEmitter(os.Stdout)
+var emitter = xylog.NewDefaultEmitter(os.Stdout)
 ```
 
 When a logging method is called, the `Logger` creates a `LogRecord` and sends it
@@ -293,7 +293,7 @@ in different application zones.
 ```golang
 // common/setup.go
 func init() {
-    var emitter = xylog.NewStreamEmitter(os.Stderr)
+    var emitter = xylog.NewDefaultEmitter(os.Stderr)
     var handler = xylog.GetHandler("")
     handler.AddEmitter(emitter)
     handler.SetEncoding(encoding.NewJSONEncoding())
@@ -357,7 +357,7 @@ Log a message and 10 fields:
 | logrus              |  8384 ns/op |         +391% |      80 allocs/op |
 | apex/log            | 22707 ns/op |        +1230% |      65 allocs/op |
 | log15               | 25461 ns/op |        +1391% |      75 allocs/op |
-| :rocket: xylog      |  3376 ns/op |          +98% |      76 allocs/op |
+| :rocket: xylog      |  3518 ns/op |         +106% |      77 allocs/op |
 
 Log a message with a logger that already has 10 fields of context:
 
@@ -370,7 +370,7 @@ Log a message with a logger that already has 10 fields of context:
 | logrus              |  6590 ns/op |        +4607% |      69 allocs/op |
 | apex/log            | 21777 ns/op |       +15455% |      54 allocs/op |
 | log15               | 15124 ns/op |       +10702% |      71 allocs/op |
-| :rocket: xylog      |   417 ns/op |         +197% |       5 allocs/op |
+| :rocket: xylog      |   416 ns/op |         +197% |       6 allocs/op |
 
 Log a static string, without any context or `printf`-style templating:
 
@@ -383,8 +383,4 @@ Log a static string, without any context or `printf`-style templating:
 | logrus              | 1008 ns/op |         +554% |      24 allocs/op |
 | apex/log            | 1744 ns/op |        +1032% |       6 allocs/op |
 | log15               | 4246 ns/op |        +2657% |      21 allocs/op |
-| :rocket: xylog      |  397 ns/op |         +158% |       5 allocs/op |
-
-# In development
-
-Add fast encoding with object, array, and map.
+| :rocket: xylog      |  447 ns/op |         +190% |       6 allocs/op |

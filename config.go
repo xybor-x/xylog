@@ -36,7 +36,7 @@ func init() {
 	rootLogger.SetLevel(WARNING)
 
 	var handler = GetHandler("xybor")
-	handler.AddEmitter(NewStreamEmitter(os.Stderr))
+	handler.AddEmitter(NewDefaultEmitter(os.Stderr))
 	handler.SetEncoding(encoding.NewTextEncoding())
 	handler.AddMacro("time", "asctime")
 	handler.AddMacro("level", "levelname")
@@ -90,10 +90,6 @@ var emitterManager []Emitter
 // this value if you want to wrap log methods of logger.
 var skipCall = 3
 
-// bufferSize is the expected size of buffer when creating a bufio.Writer from
-// io.Writer.
-var bufferSize = 4096
-
 // findCaller allows finding caller information including filename, lineno,
 // funcname, module.
 var findCaller = false
@@ -117,12 +113,6 @@ func SetSkipCall(skip int) {
 // by default.
 func SetTimeLayout(layout string) {
 	globalLock.WLockFunc(func() { timeLayout = layout })
-}
-
-// SetBufferSize sets the new expected size of buffer when creating the
-// bufio.Writer.
-func SetBufferSize(s int) {
-	globalLock.WLockFunc(func() { bufferSize = s })
 }
 
 // SetFindCaller with true to find caller information including filename, line
@@ -240,7 +230,7 @@ func (cfg SimpleConfig) Apply() (*Logger, error) {
 		}
 	}
 
-	var emitter = NewStreamEmitter(writer)
+	var emitter = NewDefaultEmitter(writer)
 
 	var enc = cfg.Encoding
 	if enc == nil {
