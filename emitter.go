@@ -46,9 +46,8 @@ type StreamEmitter struct {
 	lock *xylock.Lock
 }
 
-// NewStreamEmitter creates a StreamEmitter which writes message to a LogWriter
-// (os.Stderr by default).
-func NewStreamEmitter(w io.Writer, bufsize int) *StreamEmitter {
+// NewBufferEmitter creates a StreamEmitter which uses a Buffered Writer.
+func NewBufferEmitter(w io.Writer, bufsize int) *StreamEmitter {
 	xycond.AssertNotNil(w)
 
 	if bufsize != 0 {
@@ -66,9 +65,10 @@ func NewStreamEmitter(w io.Writer, bufsize int) *StreamEmitter {
 	return e
 }
 
-// NewDefaultEmitter creates a StreamEmitter not using the buffer size.
-func NewDefaultEmitter(w io.Writer) *StreamEmitter {
-	return NewStreamEmitter(w, 0)
+// NewStreamEmitter creates a StreamEmitter which writes logging message to a
+// stream.
+func NewStreamEmitter(w io.Writer) *StreamEmitter {
+	return NewBufferEmitter(w, 0)
 }
 
 // Emit will be called after a record was decided to log.

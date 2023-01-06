@@ -34,17 +34,6 @@ import (
 func init() {
 	rootLogger = newLogger("", nil)
 	rootLogger.SetLevel(WARNING)
-
-	var handler = GetHandler("xybor")
-	handler.AddEmitter(NewDefaultEmitter(os.Stderr))
-	handler.SetEncoding(encoding.NewTextEncoding())
-	handler.AddMacro("time", "asctime")
-	handler.AddMacro("level", "levelname")
-	handler.AddMacro("module", "name")
-
-	var logger = GetLogger("xybor")
-	logger.SetLevel(WARNING)
-	logger.AddHandler(handler)
 }
 
 // Default levels, these can be replaced with any positive set of values having
@@ -230,7 +219,7 @@ func (cfg SimpleConfig) Apply() (*Logger, error) {
 		}
 	}
 
-	var emitter = NewDefaultEmitter(writer)
+	var emitter = NewStreamEmitter(writer)
 
 	var enc = cfg.Encoding
 	if enc == nil {

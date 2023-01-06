@@ -52,7 +52,7 @@ func ExampleSimpleConfig() {
 }
 
 func ExampleLogger() {
-	var emitter = xylog.NewDefaultEmitter(os.Stdout)
+	var emitter = xylog.NewStreamEmitter(os.Stdout)
 	var handler = xylog.GetHandler("")
 	handler.AddEmitter(emitter)
 
@@ -93,7 +93,7 @@ func ExampleHandler() {
 }
 
 func ExampleEventLogger() {
-	var emitter = xylog.NewDefaultEmitter(os.Stdout)
+	var emitter = xylog.NewStreamEmitter(os.Stdout)
 	var handler = xylog.GetHandler("")
 	handler.AddEmitter(emitter)
 
@@ -109,7 +109,7 @@ func ExampleEventLogger() {
 }
 
 func ExampleNewJSONEncoding() {
-	var emitter = xylog.NewDefaultEmitter(os.Stdout)
+	var emitter = xylog.NewStreamEmitter(os.Stdout)
 	var handler = xylog.GetHandler("")
 	handler.AddEmitter(emitter)
 	handler.SetEncoding(encoding.NewJSONEncoding())
@@ -127,7 +127,7 @@ func ExampleNewJSONEncoding() {
 }
 
 func ExampleNewTextEncoding() {
-	var emitter = xylog.NewDefaultEmitter(os.Stdout)
+	var emitter = xylog.NewStreamEmitter(os.Stdout)
 	var handler = xylog.GetHandler("")
 	handler.AddEmitter(emitter)
 	handler.SetEncoding(encoding.NewTextEncoding())
@@ -145,7 +145,7 @@ func ExampleNewTextEncoding() {
 }
 
 func ExampleFilter() {
-	var emitter = xylog.NewDefaultEmitter(os.Stdout)
+	var emitter = xylog.NewStreamEmitter(os.Stdout)
 	var handler = xylog.GetHandler("")
 	handler.AddEmitter(emitter)
 	handler.AddFilter(&test.LoggerNameFilter{Name: "example.filter.chat"})

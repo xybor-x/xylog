@@ -31,7 +31,7 @@ import (
 // WithLogger allows using a Logger created with a MockWriter quickly.
 func WithLogger(t *testing.T, f func(logger *xylog.Logger, w *MockWriter)) {
 	var writer = &MockWriter{}
-	var emitter = xylog.NewStreamEmitter(writer, 1)
+	var emitter = xylog.NewStreamEmitter(writer)
 	var handler = xylog.GetHandler("")
 	handler.AddEmitter(emitter)
 
@@ -47,7 +47,7 @@ func WithLogger(t *testing.T, f func(logger *xylog.Logger, w *MockWriter)) {
 // WithHandler allows using a Handler with MockWriter.
 func WithHandler(t *testing.T, f func(h *xylog.Handler, w *MockWriter)) {
 	var writer = &MockWriter{}
-	var emitter = xylog.NewStreamEmitter(writer, 1)
+	var emitter = xylog.NewStreamEmitter(writer)
 	var handler = xylog.GetHandler(t.Name())
 	handler.AddEmitter(emitter)
 
@@ -58,13 +58,13 @@ func WithHandler(t *testing.T, f func(h *xylog.Handler, w *MockWriter)) {
 // quickly.
 func WithStreamEmitter(t *testing.T, f func(e *xylog.StreamEmitter, w *MockWriter)) {
 	var writer = &MockWriter{}
-	var emitter = xylog.NewStreamEmitter(writer, 1)
+	var emitter = xylog.NewStreamEmitter(writer)
 	f(emitter, writer)
 }
 
 // WithBenchLogger allows using a Logger whose output is io.Discard.
 func WithBenchLogger(b *testing.B, f func(logger *xylog.Logger)) {
-	var emitter = xylog.NewStreamEmitter(io.Discard, 4096)
+	var emitter = xylog.NewBufferEmitter(io.Discard, 4096)
 	var handler = xylog.GetHandler("")
 	handler.AddEmitter(emitter)
 	handler.SetEncoding(encoding.NewJSONEncoding())

@@ -1,3 +1,9 @@
+# v0.4.1 (Jan 6, 2023)
+
+-   Change name of NewStreamEmitter to NewBufferEmitter.
+-   Change name of NewDefaultEmitter to NewStreamEmitter.
+-   Remove default logger of xybor.
+
 # v0.4.0 (Jan 6, 2023)
 
 -   Allow determine the buffer size in emitter.

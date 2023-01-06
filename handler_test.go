@@ -68,7 +68,7 @@ func TestHandlerFileters(t *testing.T) {
 }
 
 func TestHandlerEmitters(t *testing.T) {
-	var emitter = xylog.NewDefaultEmitter(os.Stdout)
+	var emitter = xylog.NewStreamEmitter(os.Stdout)
 	var handler = xylog.GetHandler("")
 	handler.AddEmitter(emitter)
 	xycond.ExpectEqual(len(handler.Emitters()), 1).Test(t)
@@ -109,6 +109,6 @@ func TestHandlerFullMacro(t *testing.T) {
 		xycond.ExpectEqual("asctime=ASCTIME created=1 filename=FILENAME "+
 			"funcname=FUNCNAME levelname=LEVELNAME levelno=2 lineno=3 "+
 			"module=MODULE msecs=4 pathname=PATHNAME process=5 "+
-			"relativeCreated=6", w.Captured).Test(t)
+			"relativeCreated=6\n", w.Captured).Test(t)
 	})
 }
