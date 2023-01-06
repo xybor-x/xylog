@@ -33,7 +33,6 @@ import (
 )
 
 func TestConfigSet(t *testing.T) {
-	xylog.SetBufferSize(4096)
 	xylog.SetTimeLayout(time.RFC3339Nano)
 	xylog.SetSkipCall(3)
 	xylog.SetFindCaller(false)
@@ -48,8 +47,6 @@ func TestLevel(t *testing.T) {
 }
 
 func TestSimpleConfig(t *testing.T) {
-	xylog.SetBufferSize(1)
-	defer xylog.SetBufferSize(4096)
 	var writer = &test.MockWriter{}
 	var logger, err = xylog.SimpleConfig{
 		Encoding: encoding.NewJSONEncoding(),

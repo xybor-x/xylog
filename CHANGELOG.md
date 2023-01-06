@@ -1,5 +1,6 @@
-# Developing
+# v0.4.0 (Jan 6, 2023)
 
+-   Allow determine the buffer size in emitter.
 -   Support simple configuration.
 -   Increase at least 50% performance by using EventLogger pool.
 -   Modify benchmark: use JSONEncoding instead of TextEncoding; use io.Discard

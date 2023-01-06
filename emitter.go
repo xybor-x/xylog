@@ -42,25 +42,33 @@ type Emitter interface {
 
 // StreamEmitter writes logging message to a stream.
 type StreamEmitter struct {
-	w    *bufio.Writer
+	w    io.Writer
 	lock *xylock.Lock
 }
 
 // NewStreamEmitter creates a StreamEmitter which writes message to a LogWriter
 // (os.Stderr by default).
-func NewStreamEmitter(w io.Writer) *StreamEmitter {
+func NewStreamEmitter(w io.Writer, bufsize int) *StreamEmitter {
 	xycond.AssertNotNil(w)
 
-	var size = globalLock.RLockFunc(func() any { return bufferSize }).(int)
+	if bufsize != 0 {
+		w = bufio.NewWriterSize(w, bufsize)
+	}
+
 	var e = &StreamEmitter{
 		lock: &xylock.Lock{},
-		w:    bufio.NewWriterSize(w, size),
+		w:    w,
 	}
 
 	globalLock.WLockFunc(func() {
 		emitterManager = append(emitterManager, e)
 	})
 	return e
+}
+
+// NewDefaultEmitter creates a StreamEmitter not using the buffer size.
+func NewDefaultEmitter(w io.Writer) *StreamEmitter {
+	return NewStreamEmitter(w, 0)
 }
 
 // Emit will be called after a record was decided to log.
@@ -70,7 +78,7 @@ func (e *StreamEmitter) Emit(msg []byte) {
 
 	var _, err = e.w.Write(msg)
 	if err == nil {
-		_, err = e.w.WriteRune('\n')
+		_, err = e.w.Write([]byte("\n"))
 	}
 	if err != nil {
 		fmt.Println("------------ Logging error ------------")
@@ -81,8 +89,9 @@ func (e *StreamEmitter) Emit(msg []byte) {
 
 // Flush writes unflushed buffered data to destination.
 func (e *StreamEmitter) Flush() {
-	e.lock.Lock()
-	defer e.lock.Unlock()
-
-	e.w.Flush()
+	if w, ok := e.w.(*bufio.Writer); ok {
+		e.lock.Lock()
+		defer e.lock.Unlock()
+		w.Flush()
+	}
 }
