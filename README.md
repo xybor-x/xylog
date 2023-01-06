@@ -98,7 +98,7 @@ var handler = xylog.GetHandler("handler")
 `StreamEmitter` is supported. You can use any `Writer` in this `Emitter` type.
 
 ```golang
-var emitter = xylog.NewDefaultEmitter(os.Stdout)
+var emitter = xylog.NewStreamEmitter(os.Stdout)
 ```
 
 When a logging method is called, the `Logger` creates a `LogRecord` and sends it
@@ -293,7 +293,7 @@ in different application zones.
 ```golang
 // common/setup.go
 func init() {
-    var emitter = xylog.NewDefaultEmitter(os.Stderr)
+    var emitter = xylog.NewStreamEmitter(os.Stderr)
     var handler = xylog.GetHandler("")
     handler.AddEmitter(emitter)
     handler.SetEncoding(encoding.NewJSONEncoding())

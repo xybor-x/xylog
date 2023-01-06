@@ -191,7 +191,7 @@ func TestLoggerFindCaller(t *testing.T) {
 
 func TestLoggerFlushParent(t *testing.T) {
 	var writer = &test.MockWriter{}
-	var emitter = xylog.NewDefaultEmitter(writer)
+	var emitter = xylog.NewStreamEmitter(writer)
 	var handler = xylog.GetHandler("")
 	handler.AddEmitter(emitter)
 
