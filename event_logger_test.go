@@ -60,7 +60,7 @@ func TestEventLogger(t *testing.T) {
 			Test(t)
 
 		w.Reset()
-		logger.Event(msg).Fatal()
+		xycond.ExpectPanic(nil, logger.Event(msg).Panic).Test(t)
 		xycond.ExpectIn(fmt.Sprintf("event=\"%s\"", msg), w.Captured).
 			Test(t)
 

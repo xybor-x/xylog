@@ -44,7 +44,6 @@ func init() {
 const (
 	NOTLOG   = 1000
 	CRITICAL = 50
-	FATAL    = CRITICAL
 	ERROR    = 40
 	WARNING  = 30
 	WARN     = WARNING
