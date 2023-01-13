@@ -22,6 +22,7 @@ package xylog
 
 import (
 	"fmt"
+	"os"
 	"runtime/debug"
 	"strings"
 
@@ -243,20 +244,6 @@ func (lg *Logger) Errorf(s string, a ...any) {
 	}
 }
 
-// Fatal logs default formatting objects with FATAL level.
-func (lg *Logger) Fatal(s string) {
-	if lg.isEnabledFor(FATAL) {
-		lg.log(FATAL, makeField("messsage", s))
-	}
-}
-
-// Fatalf logs a formatting message with FATAL level.
-func (lg *Logger) Fatalf(s string, a ...any) {
-	if lg.isEnabledFor(FATAL) {
-		lg.log(FATAL, makeField("messsage", fmt.Sprintf(s, a...)))
-	}
-}
-
 // Critical logs default formatting objects with CRITICAL level.
 func (lg *Logger) Critical(s string) {
 	if lg.isEnabledFor(CRITICAL) {
@@ -269,6 +256,34 @@ func (lg *Logger) Criticalf(s string, a ...any) {
 	if lg.isEnabledFor(CRITICAL) {
 		lg.log(CRITICAL, makeField("messsage", fmt.Sprintf(s, a...)))
 	}
+}
+
+// Fatal logs default formatting objects with CRITICAL level, then followed by a
+// call to os.Exit(1).
+func (lg *Logger) Fatal(s string) {
+	lg.Critical(s)
+	os.Exit(1)
+}
+
+// Fatalf logs a formatting message with CRITICAL level, then followed by a call
+// to os.Exit(1).
+func (lg *Logger) Fatalf(s string, a ...any) {
+	lg.Criticalf(s, a...)
+	os.Exit(1)
+}
+
+// Panic logs default formatting objects with CRITICAL level, then followed by a
+// call to panic().
+func (lg *Logger) Panic(s string) {
+	lg.Critical(s)
+	panic(s)
+}
+
+// Panicf logs a formatting message with CRITICAL level, then followed by a call
+// to panic().
+func (lg *Logger) Panicf(s string, a ...any) {
+	lg.Criticalf(s, a...)
+	panic(fmt.Sprintf(s, a...))
 }
 
 // Log logs default formatting objects with a custom level.

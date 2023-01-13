@@ -1,3 +1,8 @@
+# v0.5.0 (Jan 13, 2023)
+
+-   Fatal calls to os.Exit(1).
+-   Panic calls to panic().
+
 # v0.4.1 (Jan 6, 2023)
 
 -   Change name of NewStreamEmitter to NewBufferEmitter.

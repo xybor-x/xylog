@@ -49,7 +49,6 @@ func TestLoggerLogMethods(t *testing.T) {
 			{logger.Warnf, logger.Warn},
 			{logger.Warningf, logger.Warning},
 			{logger.Errorf, logger.Error},
-			{logger.Fatalf, logger.Fatal},
 			{logger.Criticalf, logger.Critical},
 		}
 
@@ -181,7 +180,7 @@ func TestLoggerFindCaller(t *testing.T) {
 
 		logger.Error("foo")
 
-		xycond.ExpectIn("lineno=182", w.Captured).Test(t)
+		xycond.ExpectIn("lineno=181", w.Captured).Test(t)
 		xycond.ExpectIn(
 			"module=github.com/xybor-x/xylog_test", w.Captured).Test(t)
 		xycond.ExpectIn(

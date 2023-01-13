@@ -20,7 +20,10 @@
 
 package xylog
 
-import "sync"
+import (
+	"os"
+	"sync"
+)
 
 var eventLoggerPool = sync.Pool{
 	New: func() any {
@@ -81,20 +84,24 @@ func (e *EventLogger) Error() {
 	}
 }
 
-// Fatal calls Log with FATAL level.
-func (e *EventLogger) Fatal() {
-	defer e.free()
-	if e.lg.isEnabledFor(FATAL) {
-		e.lg.log(FATAL, e.fields...)
-	}
-}
-
 // Critical calls Log with CRITICAL level.
 func (e *EventLogger) Critical() {
 	defer e.free()
 	if e.lg.isEnabledFor(CRITICAL) {
 		e.lg.log(CRITICAL, e.fields...)
 	}
+}
+
+// Fatal calls Log with CRITICAL level, then followed by a call to os.Exit(1).
+func (e *EventLogger) Fatal() {
+	e.Critical()
+	os.Exit(1)
+}
+
+// Panic calls Log with CRITICAL level, then followed by a call to panic().
+func (e *EventLogger) Panic() {
+	e.Critical()
+	panic(nil)
 }
 
 // Log logs with a custom level.
