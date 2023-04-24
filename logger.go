@@ -174,6 +174,36 @@ func (lg *Logger) AddField(key string, value any) {
 	})
 }
 
+// DeleteField deletes a fixed field from all logging message of this logger.
+func (lg *Logger) DeleteField(key string) {
+	lg.lock.WLockFunc(func() {
+		idx := -1
+		for iter, pair := range lg.fields {
+			if pair.key == key {
+				idx = iter
+			}
+		}
+		if idx != -1 {
+			lg.fields = append(lg.fields[:idx], lg.fields[idx+1:]...)
+		}
+	})
+}
+
+// UpdateField updates a fixed field to all logging message of this logger.
+func (lg *Logger) UpdateField(key string, value string) {
+	lg.lock.WLockFunc(func() {
+		idx := -1
+		for index, pair := range lg.fields {
+			if pair.key == key {
+				idx = index
+			}
+		}
+		if idx != -1 {
+			lg.fields[idx] = makeField(key, value)
+		}
+	})
+}
+
 // Debug logs default formatting objects with DEBUG level.
 func (lg *Logger) Debug(s string) {
 	if lg.isEnabledFor(DEBUG) {

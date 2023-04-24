@@ -145,6 +145,33 @@ func TestLoggerAddField(t *testing.T) {
 	})
 }
 
+func TestLoggerDeleteField(t *testing.T) {
+	test.WithLogger(t, func(logger *xylog.Logger, w *test.MockWriter) {
+		logger.AddField("custom", "this is a custom field")
+		logger.AddField("custom2", "this is another custom field")
+		logger.Event("test").Error()
+		xycond.ExpectIn(`event=test custom="this is a custom field" custom2="this is another custom field"`,
+			w.Captured).Test(t)
+		logger.DeleteField("custom")
+		logger.Event("test").Error()
+		xycond.ExpectIn(`event=test custom2="this is another custom field"`,
+			w.Captured).Test(t)
+	})
+}
+
+func TestLoggerUpdateField(t *testing.T) {
+	test.WithLogger(t, func(logger *xylog.Logger, w *test.MockWriter) {
+		logger.AddField("custom", "this is a custom field")
+		logger.Event("test").Error()
+		xycond.ExpectIn(`event=test custom="this is a custom field"`,
+			w.Captured).Test(t)
+		logger.UpdateField("custom", "this is an updated custom field")
+		logger.Event("test").Error()
+		xycond.ExpectIn(`event=test custom="this is an updated custom field"`,
+			w.Captured).Test(t)
+	})
+}
+
 func TestLoggerHandlers(t *testing.T) {
 	var handler = xylog.GetHandler("")
 	var logger = xylog.GetLogger(t.Name())
