@@ -181,6 +181,7 @@ func (lg *Logger) DeleteField(key string) {
 		for iter, pair := range lg.fields {
 			if pair.key == key {
 				idx = iter
+				break
 			}
 		}
 		if idx != -1 {
@@ -196,6 +197,7 @@ func (lg *Logger) UpdateField(key string, value string) {
 		for index, pair := range lg.fields {
 			if pair.key == key {
 				idx = index
+				break
 			}
 		}
 		if idx != -1 {
